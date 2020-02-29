@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Uno</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="https://fonts.googleapis.com/css?family=Roboto+Slab|Spartan&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="css/lobby.css">
+	<link rel="shortcut icon" href="images/small_icon.png" type="image/x-icon">
+	<script src="/socket.io/socket.io.js"></script>
+	<script defer src="scripts/lobby.js"></script>
+</head>
+
+<body class="loading">
+	<main>
+		<div class="username-form">
+			<img src="images/logo.png" alt="" class="logo">
+			<h1>Login to Uno.</h1>
+			<form class="login-form">
+				<label for="Name">What's your name?</label>
+				<input placeholder="What is your name?" type="text" name="Name" id="Name" autocomplete="off">
+
+				<button disabled class="nextButton">Continue</button>
+			</form>
+
+		</div>
+		<div class="lobby">
+			<img src="images/logo.png" alt="" class="logo">
+			<a class="change-name">&triangleleft; change name...</a>
+			<div>
+				<h1>Room browser</h1>
+				<input type="search" placeholder="search" id="search" autocomplete="off">
+				<button class="add create-room"></button>
+				<div class="room-browser"></div>
+			</div>
+			<form class="password-screen">
+				<h1>Enter password</h1>
+				<input type="text" name="password" id="" placeholder="enter password..." autocomplete="off">
+				<div class="button-group">
+					<button class="secondary close-window" type="button">Cancel</button>
+					<button>Enter</button>
+				</div>
+			</form>
+			<div class="add-room">
+				<h1>Create New Room</h1>
+				<a class="close">&times;</a>
+				<form id="room-form">
+					<label for="room-name">name</label>
+					<input type="text" name="room-name" id="room-name" placeholder="name" autocomplete="off">
+
+					<label for="max-players">Max players:</label>
+					<input type="number" name="max-players" id="max-players" value="4" min="2" max="10"
+						placeholder="2-10">
+
+					<label for="secret" class="with-switch">is this room secret?<input type="checkbox" name="secret"
+							id="secret" hidden>
+						<div class="switch">
+							<span class="knob"></span>
+						</div>
+					</label>
+
+					<label for="has-password" class="with-switch">has password?<input type="checkbox"
+							name="has-password" id="has-password" hidden>
+						<div class="switch">
+							<span class="knob"></span>
+						</div>
+						<div class="toggle">
+							<label for="password">password</label>
+							<input type="text" name="password" id="password" autocomplete="off" placeholder="password">
+						</div>
+					</label>
+
+					<button>Create room</button>
+				</form>
+			</div>
+		</div>
+	</main>
+
+</body>
+
+</html>

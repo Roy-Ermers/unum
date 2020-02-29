@@ -1,0 +1,252 @@
+@use "base";
+
+.loading {
+	* {
+		opacity: 0;
+	}
+
+	&::before {
+		content: "";
+		display: block;
+		position: fixed;
+		width: 10vmax;
+		height: 10vmax;
+		top: calc(50vh - 5vmax);
+		left: calc(50vw - 5vmax);
+		background: url("/images/logo.png");
+		background-size: 100%;
+		background-repeat: no-repeat;
+	}
+
+	&::after {
+		opacity: 1;
+	}
+}
+
+body::after {
+	content: "";
+	display: block;
+	width: 0;
+	height: 0;
+	border: 1vmax solid;
+	border-top-color: base.$blue;
+	border-right-color: base.$red;
+	border-bottom-color: base.$green;
+	border-left-color: base.$yellow;
+	border-radius: 50%;
+	animation: Rotate 500ms linear infinite;
+	position: fixed;
+	left: calc(50vw - 1vmax);
+	top: calc(50vh - 1vmax + 8.5vmax);
+	transition: opacity ease 250ms;
+	opacity: 0;
+
+	@keyframes Rotate {
+		0% {
+			transform: rotate(0deg);
+		}
+
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+
+}
+
+* {
+	transition: opacity 500ms ease;
+}
+
+.username-form {
+	background-color: base.$background;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: 99;
+
+	display: flex;
+
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+
+	h1 {
+		font-size: 1.5rem;
+		margin-bottom: 2rem;
+	}
+
+	form {
+		width: 300px;
+		text-align: center;
+	}
+
+	input {
+		text-align: left;
+
+	}
+}
+
+.lobby {
+	width: 75vw;
+	margin: 0 auto;
+
+	@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+		width: 100vw;
+	}
+
+	img {
+		display: block;
+		margin: 0 auto;
+	}
+
+	.change-name {
+		opacity: 0.5;
+		position: fixed;
+		top: 5px;
+		left: 5px;
+		font-size: 0.75;
+		font-weight: 100;
+		cursor: pointer;
+	}
+
+	.create-room {
+		display: inline-block;
+		position: relative;
+		bottom: -2rem;
+		right: calc(-100% + 3rem);
+	}
+
+	input[type=search] {
+		display: block;
+		margin: 0 auto;
+		margin-bottom: -5.5rem;
+		border-bottom: none;
+		text-align: left;
+		font-size: 1.2rem;
+		width: 100%;
+		padding-left: 5px;
+		;
+	}
+
+	.room-browser {
+		background-color: base.$accent;
+		border-top: 2px solid base.$purple;
+		margin: 0 auto;
+		padding: 1rem;
+		box-shadow: 0px 3px 6px rgba(0, 0, 0, .16);
+		display: flex;
+		flex-direction: column;
+
+		&.search {
+			.room:not(.match) {
+				display: none;
+			}
+		}
+
+		.room {
+			display: flex;
+			align-items: center;
+			justify-content: stretch;
+			max-width: 100%;
+			padding-right: 4rem;
+
+			&.full {
+				opacity: 0.5;
+				order: 999;
+				pointer-events: none;
+			}
+
+			&:not(:last-of-type) {
+				border-bottom: 1px solid darken(base.$accent1, 5);
+			}
+
+			h1 {
+				font-size: 1.2rem;
+			}
+
+			&.password {
+				padding-right: 0;
+			}
+
+			&.password::after {
+				content: " ";
+				display: inline-block;
+				width: 3rem;
+				height: 3rem;
+				margin-left: 1rem;
+				background: url("/images/lock.png");
+				background-size: 100%;
+				background-repeat: no-repeat;
+			}
+
+			div {
+				flex: 1;
+			}
+		}
+	}
+
+	.password-screen {
+		position: fixed;
+		top: 0;
+		bottom: 100vh;
+		left: 0;
+		right: 0;
+		background-color: transparentize(base.$accent1, .25);
+		backdrop-filter: blur(5px);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+
+		&.show {
+			bottom: 0;
+		}
+
+		input {
+			width: 35vw;
+			text-align: center;
+			text-security: disc;
+			-webkit-text-security: disc;
+		}
+
+		.button-group {
+			width: 50vw;
+		}
+	}
+
+	.add-room {
+		position: fixed;
+		right: -33vw;
+		top: 0;
+		height: 100vh;
+		width: 33vw;
+		background-color: transparentize(base.$accent1, .25);
+		box-shadow: 0 3px 6px rgba(0, 0, 0, .16);
+		backdrop-filter: blur(5px);
+		transition: right 250ms ease;
+
+		h1 {
+			text-align: center;
+			border-bottom: 2px solid base.$purple;
+			padding-bottom: 5px;
+		}
+
+		form {
+			padding: 1rem;
+		}
+
+		&.show {
+			right: 0;
+		}
+
+		@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+			width: 100%;
+			background-color: transparentize(base.$accent1, .15);
+			right: -100%;
+		}
+	}
+
+}
