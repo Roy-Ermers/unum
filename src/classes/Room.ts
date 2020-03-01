@@ -1,5 +1,7 @@
 import { GenerateID } from "../utils";
 import EventEmitter from "events";
+import Player from "./player";
+import Card from "./card";
 export enum RoomState { WaitingForPlayers, Started, Done };
 export default class Room extends EventEmitter {
 
@@ -22,8 +24,8 @@ export default class Room extends EventEmitter {
 	public MaxPlayers: number = 6;
 	public State: RoomState;
 	public CreatorID: string;
-	private Players: { [key: string]: string } = {};
-
+	private Players: { [key: string]: Player } = {};
+	private CardsInPlay: Card[] = [];
 
 
 	get ConnectedPlayers() {
@@ -43,7 +45,7 @@ export default class Room extends EventEmitter {
 		this.MaxPlayers = maxPlayers ?? 4;
 	}
 
-	public startupGame(io: SocketIO.Namespace) {
+	public startupSocket(io: SocketIO.Namespace) {
 		console.log(`starting up socket for ${this.Name}`);
 		io.in(this.SocketID).on("connection", socket => {
 			console.log(`Got connection from ${socket.id} to room ${this.Name}`)
@@ -53,6 +55,11 @@ export default class Room extends EventEmitter {
 				console.log("info for " + this.Name);
 				callback(this.toPublicObject())
 			});
+			socket.on("listPlayers", callback => {
+				console.log("sending player info")
+				callback(Object.values(this.Players).map(x => ({ Name: x.Name, Cards: x.Cards.length })))
+			});
+
 			socket.on("disconnect", () => {
 				delete this.Players[socket.id];
 				this.emit("update");
@@ -66,17 +73,16 @@ export default class Room extends EventEmitter {
 	 */
 	AuthenticatePlayer({ Name }: { Name: string }, socket: SocketIO.Socket) {
 		if (Name?.length >= 3 && this.ConnectedPlayers < this.MaxPlayers) {
-			this.Players[socket.id] = Name;
+			this.Players[socket.id] = new Player(socket, Name);
 			socket.emit("Authenticated");
 			this.emit("update");
 			return;
 		}
-		else if (this.ConnectedPlayers >= this.MaxPlayers) {
+		else if (this.ConnectedPlayers >= this.MaxPlayers)
 			socket.emit("Disconnect", { reason: "Room is full." })
-		}
-		else {
+		else
 			socket.emit("Disconnect", { reason: "Authenticating with invalid name." })
-		}
+
 		setTimeout(() => socket.disconnect(false), 500);
 	}
 

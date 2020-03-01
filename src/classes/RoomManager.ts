@@ -57,7 +57,7 @@ export class RoomManager {
 	public static CreateRoom(Name: string, password: string, secret: boolean, creatorID: string, maxPlayers?: number) {
 		let room = new Room(Name, password, secret, creatorID, maxPlayers);
 
-		room.startupGame(this.Server.of("/" + room.SocketID));
+		room.startupSocket(this.Server.of("/" + room.SocketID));
 		room.on("update", () => this.SendUpdate());
 		console.log(`Created new room ${room.ID} ${room.Name} for ${room.CreatorID}`);
 		this.rooms.unshift(room);

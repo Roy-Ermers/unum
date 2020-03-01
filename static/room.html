@@ -9,12 +9,32 @@
     <link rel="stylesheet" href="css/room.css">
     <script src="/socket.io/socket.io.js"></script>
     <link rel="shortcut icon" href="images/small_icon.png" type="image/x-icon">
-
-    <script src="/scripts/game.js"></script>
+    <!-- need to find a good fix for this. -->
+    <!-- <script src="scripts/DragDropTouch.js"></script> -->
+    <script defer src="/scripts/game.js"></script>
 </head>
 
 <body>
+    <div class="players">
+        <p>Roy Ermers <img src="images/card_back.png"></p>
+        <p>Sam Tieland
+            <img src="images/card_back.png">
+            <img src="images/card_back.png">
+            <img src="images/card_back.png">
+            <img src="images/card_back.png">
+            <img src="images/card_back.png">
+            <img src="images/card_back.png">
+            <img src="images/card_back.png">
+        </p>
+    </div>
+    <div class="hand">
 
+    </div>
+    <div class="stack">
+        <img src="images/card_back.png" />
+    </div>
+    <div class="pile" dropzone="move">
+    </div>
 </body>
 
 </html>

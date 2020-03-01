@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const utils_1 = require("../utils");
 const events_1 = __importDefault(require("events"));
+const player_1 = __importDefault(require("./player"));
 var RoomState;
 (function (RoomState) {
     RoomState[RoomState["WaitingForPlayers"] = 0] = "WaitingForPlayers";
@@ -20,6 +21,7 @@ class Room extends events_1.default {
         this.Secret = false;
         this.MaxPlayers = 6;
         this.Players = {};
+        this.CardsInPlay = [];
         this._ID = utils_1.GenerateID();
         this._socketID = utils_1.GenerateID();
         this.CreatorID = creatorID;
@@ -39,7 +41,7 @@ class Room extends events_1.default {
         var _a;
         return _a = Object.keys(this.Players).length, (_a !== null && _a !== void 0 ? _a : 0);
     }
-    startupGame(io) {
+    startupSocket(io) {
         console.log(`starting up socket for ${this.Name}`);
         io.in(this.SocketID).on("connection", socket => {
             console.log(`Got connection from ${socket.id} to room ${this.Name}`);
@@ -47,6 +49,10 @@ class Room extends events_1.default {
             socket.on("info", callback => {
                 console.log("info for " + this.Name);
                 callback(this.toPublicObject());
+            });
+            socket.on("listPlayers", callback => {
+                console.log("sending player info");
+                callback(Object.values(this.Players).map(x => ({ Name: x.Name, Cards: x.Cards.length })));
             });
             socket.on("disconnect", () => {
                 delete this.Players[socket.id];
@@ -61,17 +67,15 @@ class Room extends events_1.default {
     AuthenticatePlayer({ Name }, socket) {
         var _a;
         if (((_a = Name) === null || _a === void 0 ? void 0 : _a.length) >= 3 && this.ConnectedPlayers < this.MaxPlayers) {
-            this.Players[socket.id] = Name;
+            this.Players[socket.id] = new player_1.default(socket, Name);
             socket.emit("Authenticated");
             this.emit("update");
             return;
         }
-        else if (this.ConnectedPlayers >= this.MaxPlayers) {
+        else if (this.ConnectedPlayers >= this.MaxPlayers)
             socket.emit("Disconnect", { reason: "Room is full." });
-        }
-        else {
+        else
             socket.emit("Disconnect", { reason: "Authenticating with invalid name." });
-        }
         setTimeout(() => socket.disconnect(false), 500);
     }
     /**
