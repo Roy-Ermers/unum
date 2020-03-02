@@ -13,29 +13,88 @@ const pile = document.querySelector(".pile");
 const playerList = document.querySelector(".players");
 //#endregion
 
+//#region constants
+const isTouch = window.matchMedia("(pointer: coarse)").matches;
+//#endregion
 
 //#region Networking
+
+let RoomInfo = {
+	ID: undefined,
+	Name: "",
+	HasPassword: false,
+	State: 0,
+	Players: 0,
+	MaxPlayers: 0
+};
+
+let Player = {
+	Name: "",
+	Host: false
+};
+
 function JoinGame() {
 	let socketID = localStorage.getItem("SocketID");
-	const Name = localStorage.getItem("name");
+	let Name = localStorage.getItem("name");
+
+	localStorage.removeItem("SocketID");
+
 	if (!socketID || !Name) {
-		location.href = "../";
-		return;
+		//secret url
+		let hash = location.hash.substr(1);
+		console.log(hash);
+		if (hash.match(/([A-z0-9]){32}/)) {
+			console.log("hash is an room id.");
+			socketID = hash;
+			if (!Name) {
+				let message = "";
+				while (Name == "" || Name.length < 3 || !Name) {
+					Name = prompt(message + "What is your name?");
+					message = "Your name must be 3 characters long.\n";
+				}
+			}
+		}
+		else {
+			location.href = "../?reason=empty-request";
+			return;
+		}
 	}
+	Player.Name = Name;
+
+	let timeout = setTimeout(() => {
+		console.log("connection timeout");
+		location.href = "../?reason=no-response";
+	}, 2000);
 	// @ts-ignore
-	socket = io("/" + socketID);
+	socket = io("/" + socketID, {
+		timeout: 2000
+	});
+
 	socket.on("connect", () => {
 		console.log("Connection established.");
+		clearTimeout(timeout);
 	});
+
 	socket.on("connect_error", () => location.href = "../");
-	socket.on("connect_timeout", () => location.href = "../");
 
 
 	socket.on("Authenticate", (callback) => {
+		let HostKey = localStorage.getItem("HostKey");
+		localStorage.removeItem("HostKey");
 		console.log("Authenticating.");
-		callback({ Name });
+		callback({ Name, HostKey });
 	});
-	socket.on("Authenticated", () => console.log("Authenticated."));
+	socket.on("Authenticated", ({ Host }) => {
+
+		if (Host) {
+			Player.Host = Host;
+			InitializeHostMenu();
+		}
+
+		socket.emit("info", info => RoomInfo = info);
+		console.log("Authenticated.");
+
+	});
 	socket.on("Disconnect", (reason) => {
 		alert(`Connection lost.\nreason: ${reason.reason || "none"}`);
 		location.href = "../";
@@ -82,6 +141,19 @@ class Card {
 //#endregion
 
 //#region HTML
+function InitializeHostMenu() {
+
+}
+
+function ShowErrorMessage(message) {
+	let alert = document.createElement("div");
+	alert.classList.add("alert");
+	alert.textContent = message;
+	alert.addEventListener("animationend", () => alert.remove());
+	document.body.appendChild(alert);
+}
+
+
 /**
  * @param {Card} card
  * @param {string} [source]
@@ -94,16 +166,20 @@ function AddCard(card, source) {
 	img.src = card.URL;
 	img.draggable = true;
 
-	img.addEventListener("touchend", () => {
-		ThrowCard(card, window.innerWidth / 2, window.innerHeight / 2);
-		RemoveCard();
-	});
+	if (isTouch)
+		img.addEventListener("click", () => {
+			ThrowCard(card, window.innerWidth / 2, window.innerHeight / 2);
+			RemoveCard();
+		});
+
 	img.addEventListener("dragstart", ev => {
 		img.classList.remove("from-stock");
 		ev.dataTransfer.effectAllowed = "move";
 		ev.dataTransfer.dropEffect = "move";
 		ev.dataTransfer.setDragImage(img, 100, 100);
+		ev.dataTransfer.clearData();
 		ev.dataTransfer.setData("uno-card", JSON.stringify(card));
+		console.log(ev.dataTransfer.types);
 	});
 
 	img.addEventListener('drag', (ev) => {
@@ -141,17 +217,17 @@ function ThrowCard(card, offsetX, offsetY) {
 	img.classList.add("card");
 	img.src = card.URL;
 	pile.appendChild(img);
-
+	let randomRotation = Math.random() * 360;
 	img.animate([
 		{
 			top: offsetY + "px",
 			left: offsetX + "px",
-			transform: 'translate(-50%, -50%) rotate(0)'
+			transform: `translate(-50%, -50%) rotate(${randomRotation + Math.random() * 20}deg)`
 		},
 		{
 			top: "50%",
 			left: "50%",
-			transform: `translate(-${50 + Math.random() * 10}%, -${50 + Math.random() * 10}%) rotate(${Math.random() * 360 + "deg"})`
+			transform: `translate(-${50 + Math.random() * 10}%, -${50 + Math.random() * 10}%) rotate(${randomRotation + "deg"})`
 
 		}
 	],
@@ -184,21 +260,33 @@ window.addEventListener('wheel', function (e) {
 	else hand.scrollBy({ behavior: "auto", left: -100 });
 });
 let PlayerListShown = false;
+
+/**
+ * Shows the playerlist
+ */
 function ShowPlayerList() {
 	console.log("showing players");
-	playerList.innerHTML = "<h1>Players</h1>";
+	playerList.innerHTML = `<h1>${RoomInfo.Name} (${RoomInfo.Players}/${RoomInfo.MaxPlayers})</h1>`;
 	socket.emit("listPlayers", playerlist => {
 		console.log(playerlist);
 		playerlist.forEach(player => {
 			let elem = document.createElement("p");
 			elem.textContent = player.Name;
-
-			for (let i = 0; i < player.Cards; i++) {
+			if (player.Cards < 20)
+				for (let i = 0; i < player.Cards; i++) {
+					let img = document.createElement("img");
+					img.src = "images/card_back.png";
+					elem.appendChild(img);
+				}
+			else {
 				let img = document.createElement("img");
 				img.src = "images/card_back.png";
 				elem.appendChild(img);
-			}
 
+				let remaining = document.createElement("p");
+				remaining.textContent = " x " + player.Cards;
+				elem.appendChild(remaining);
+			}
 			playerList.appendChild(elem);
 		});
 
@@ -227,7 +315,3 @@ document.addEventListener("keyup", ev => {
 });
 
 //#endregion
-document.querySelector(".stack").addEventListener("click", () => {
-	AddCard(new Card(["red", "blue", "green", "yellow"][Math.floor(Math.random() * 4)], (Math.floor(Math.random() * 10).toString())), "stock");
-});
-AddCard(new Card("special", "4"));

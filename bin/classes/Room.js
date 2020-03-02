@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const utils_1 = require("../utils");
 const events_1 = __importDefault(require("events"));
 const player_1 = __importDefault(require("./player"));
+const card_1 = __importDefault(require("./card"));
 var RoomState;
 (function (RoomState) {
     RoomState[RoomState["WaitingForPlayers"] = 0] = "WaitingForPlayers";
@@ -14,28 +15,41 @@ var RoomState;
 })(RoomState = exports.RoomState || (exports.RoomState = {}));
 ;
 class Room extends events_1.default {
-    constructor(name, password, secret, creatorID, maxPlayers) {
+    constructor(name, password, secret, maxPlayers) {
         super();
         this.Name = "";
         this.Password = "";
         this.Secret = false;
         this.MaxPlayers = 6;
-        this.Players = {};
-        this.CardsInPlay = [];
+        this.Players = new Map();
+        this.Cards = [];
         this._ID = utils_1.GenerateID();
         this._socketID = utils_1.GenerateID();
-        this.CreatorID = creatorID;
-        this.State = RoomState.WaitingForPlayers;
+        this._hostKey = utils_1.GenerateID();
+        this._state = RoomState.WaitingForPlayers;
         this.Name = name;
         this.Password = password;
         this.Secret = secret;
         this.MaxPlayers = (maxPlayers !== null && maxPlayers !== void 0 ? maxPlayers : 4);
+        this.Cards = card_1.default.PlayCards();
     }
     get ID() {
         return this._ID;
     }
+    /**
+     * used to determine which socket is the host.
+     */
+    get HostKey() {
+        return this._hostKey;
+    }
     get SocketID() {
         return this._socketID;
+    }
+    set State(val) {
+        this._state = val;
+    }
+    get State() {
+        return this._state;
     }
     get ConnectedPlayers() {
         var _a;
@@ -52,10 +66,17 @@ class Room extends events_1.default {
             });
             socket.on("listPlayers", callback => {
                 console.log("sending player info");
-                callback(Object.values(this.Players).map(x => ({ Name: x.Name, Cards: x.Cards.length })));
+                callback([...this.Players.values()].map(x => ({ Name: x.Name, Cards: x.CardCount, Host: x.SocketID == this.HostID })));
+            });
+            socket.on("StartGame", callback => {
+                if (socket.id == this.HostID) {
+                    this.StartGame();
+                    callback();
+                }
+                callback({ error: 403, message: "You are not the host." });
             });
             socket.on("disconnect", () => {
-                delete this.Players[socket.id];
+                this.Players.delete(socket.id);
                 this.emit("update");
             });
         });
@@ -64,10 +85,19 @@ class Room extends events_1.default {
      * Authenticate an player and store its name.
      * @param socket the socket that needs to be authenticated.
      */
-    AuthenticatePlayer({ Name }, socket) {
+    AuthenticatePlayer({ Name, HostKey }, socket) {
         var _a;
+        if (this.Players.has(socket.id)) {
+            socket.emit("Authenticated", { Host: socket.id == this.HostID });
+            return;
+        }
         if (((_a = Name) === null || _a === void 0 ? void 0 : _a.length) >= 3 && this.ConnectedPlayers < this.MaxPlayers) {
-            this.Players[socket.id] = new player_1.default(socket, Name);
+            this.Players.set(socket.id, new player_1.default(socket, Name));
+            if (HostKey == this.HostKey && !this.HostID) {
+                console.log(`Found host ${Name} of room ${this.ID}`);
+                delete this._hostKey;
+                this.HostID = socket.id;
+            }
             socket.emit("Authenticated");
             this.emit("update");
             return;
@@ -79,12 +109,32 @@ class Room extends events_1.default {
         setTimeout(() => socket.disconnect(false), 500);
     }
     /**
+     * shuffles the game cards.
+     */
+    shuffleCards() {
+        for (let i = this.Cards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.Cards[i], this.Cards[j]] = [this.Cards[j], this.Cards[i]];
+        }
+    }
+    /**
+     * starts up the game
+     */
+    StartGame() {
+        this.shuffleCards();
+        Object.values(this.Players).forEach(player => {
+            player.AddCard(...this.Cards.slice(0, 7));
+        });
+    }
+    /**
      * Generates an object without the password.
      */
     toPublicObject() {
+        var _a;
         return {
             ID: this._ID,
             Name: this.Name,
+            Host: (_a = Object.values(this.Players).find(x => x.SocketID == this.HostID)) === null || _a === void 0 ? void 0 : _a.Name,
             HasPassword: this.Password != undefined && this.Password != "",
             State: this.State,
             Players: this.ConnectedPlayers,

@@ -3,6 +3,7 @@
  * @property {boolean} HasPassword
  * @property {string} ID
  * @property {string} Name
+ * @property {string} [Host]
  * @property {number} Players
  * @property {number} MaxPlayers
  * @property {number} State
@@ -56,6 +57,24 @@ passwordScreen.addEventListener("submit", (ev) => {
 	ConnectToRoom(RoomID, password);
 });
 createRoomForm.addEventListener("submit", CreateRoom);
+
+let search = new URLSearchParams(location.search);
+if (search.has("reason")) {
+	switch (search.get("reason")) {
+		case "no-response":
+			ShowErrorMessage("Room didn't exist or timed out.");
+			break;
+		case "empty-request":
+			ShowErrorMessage("You tried to join a room that didn't exist.");
+			break;
+		default:
+			ShowErrorMessage("Something went wrong, reason: " + search.get("reason"));
+			break;
+	}
+
+	window.history.replaceState({}, document.title, location.pathname);
+}
+
 /**
  * @param {InputEvent} ev
  */
@@ -92,7 +111,8 @@ function CreateRoom(ev) {
 			alert(response.message);
 		}
 		else {
-			ConnectToRoom(response.ID, room.Password);
+			localStorage.setItem("HostKey", response.HostKey);
+			ConnectToRoom(response.Room.ID, room.Password);
 		}
 	});
 }
@@ -141,6 +161,14 @@ function AddRoom(room) {
 	let playerElement = document.createElement("p");
 	playerElement.textContent = room.Players + "/" + room.MaxPlayers;
 
+	if (room.Host) {
+		let creatorElem = document.createElement("span");
+		creatorElem.classList.add("creator");
+		creatorElem.textContent += " created by " + room.Host;
+
+		nameElement.appendChild(creatorElem);
+	}
+
 	dataElement.appendChild(nameElement);
 	dataElement.appendChild(playerElement);
 
@@ -159,6 +187,13 @@ function AddRoom(room) {
 	RoomBrowser.insertAdjacentElement("afterbegin", roomElement);
 }
 
+function ShowErrorMessage(message) {
+	let alert = document.createElement("div");
+	alert.classList.add("alert");
+	alert.textContent = message;
+	alert.addEventListener("animationend", () => alert.remove());
+	document.body.appendChild(alert);
+}
 //#endregion
 //#region Networking
 /**
@@ -191,6 +226,7 @@ RoomSocket.on("update", rooms => rooms.forEach(AddRoom));
  * @param {string} [password]
  */
 function ConnectToRoom(RoomID, password) {
+
 	localStorage.setItem("Room", RoomID);
 	if (NameTextBox.value == "") {
 		alert("You need to fill in a name.");
@@ -200,6 +236,7 @@ function ConnectToRoom(RoomID, password) {
 		if (res.error) {
 			if (res.error == 401 && (password == undefined || password == "")) {
 				passwordScreen.classList.add("show");
+				passwordScreen.querySelector("input").focus();
 				passwordScreen.querySelector("input").value = "";
 			}
 			else

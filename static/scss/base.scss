@@ -37,6 +37,53 @@ body {
 
 }
 
+.alert {
+	position: fixed;
+	top: 5px;
+	left: 33%;
+	right: 33%;
+	z-index: 999;
+	box-shadow: 0 3px 6px rgba(0, 0, 0, .16);
+	padding: 2rem 2rem;
+	border-radius: 4px;
+	justify-items: center;
+	text-align: center;
+
+	background: url("/images/warning.png") $purple;
+	background-repeat: no-repeat;
+	background-size: 4rem;
+	background-position: 1rem center;
+
+	animation: alert 5s ease forwards;
+
+	@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+		left: 5px;
+		right: 5px;
+	}
+
+	@keyframes alert {
+		0% {
+			opacity: 0;
+			top: -8rem;
+		}
+
+		10% {
+			top: 5px;
+			opacity: 1;
+		}
+
+		90% {
+			top: 5px;
+			opacity: 1;
+		}
+
+		100% {
+			top: -8rem;
+			opacity: 0;
+		}
+	}
+}
+
 .close {
 	position: absolute;
 	top: 5px;

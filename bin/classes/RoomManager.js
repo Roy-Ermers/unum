@@ -30,8 +30,11 @@ class RoomManager {
                         callback({ error: 412, message: "Too many or too less players to make a game." });
                         return;
                     }
-                    let newRoom = RoomManager.CreateRoom(room.Name, room.Password, room.Secret, socket.id, room.MaxPlayers);
-                    callback(newRoom.toPublicObject());
+                    let newRoom = RoomManager.CreateRoom(room.Name, room.Password, room.Secret, room.MaxPlayers);
+                    callback({
+                        Room: newRoom.toPublicObject(),
+                        HostKey: newRoom.HostKey
+                    });
                 }
             });
             socket.on("Authenticate", (roomID, password, callback) => {
@@ -50,11 +53,11 @@ class RoomManager {
             });
         });
     }
-    static CreateRoom(Name, password, secret, creatorID, maxPlayers) {
-        let room = new Room_1.default(Name, password, secret, creatorID, maxPlayers);
+    static CreateRoom(Name, password, secret, maxPlayers) {
+        let room = new Room_1.default(Name, password, secret, maxPlayers);
         room.startupSocket(this.Server.of("/" + room.SocketID));
         room.on("update", () => this.SendUpdate());
-        console.log(`Created new room ${room.ID} ${room.Name} for ${room.CreatorID}`);
+        console.log(`Created new room ${room.ID} ${room.Name} for ${room.HostID}`);
         this.rooms.unshift(room);
         if (!room.Secret) {
             room.on("update", () => this.SendUpdate());

@@ -35,8 +35,11 @@ export class RoomManager {
 						return;
 					}
 
-					let newRoom = RoomManager.CreateRoom(room.Name, room.Password, room.Secret, socket.id, room.MaxPlayers);
-					callback(newRoom.toPublicObject());
+					let newRoom = RoomManager.CreateRoom(room.Name, room.Password, room.Secret, room.MaxPlayers);
+					callback({
+						Room: newRoom.toPublicObject(),
+						HostKey: newRoom.HostKey
+					});
 				}
 			});
 
@@ -54,12 +57,12 @@ export class RoomManager {
 			})
 		});
 	}
-	public static CreateRoom(Name: string, password: string, secret: boolean, creatorID: string, maxPlayers?: number) {
-		let room = new Room(Name, password, secret, creatorID, maxPlayers);
+	public static CreateRoom(Name: string, password: string, secret: boolean, maxPlayers?: number) {
+		let room = new Room(Name, password, secret, maxPlayers);
 
 		room.startupSocket(this.Server.of("/" + room.SocketID));
 		room.on("update", () => this.SendUpdate());
-		console.log(`Created new room ${room.ID} ${room.Name} for ${room.CreatorID}`);
+		console.log(`Created new room ${room.ID} ${room.Name} for ${room.HostID}`);
 		this.rooms.unshift(room);
 		if (!room.Secret) {
 			room.on("update", () => this.SendUpdate());
