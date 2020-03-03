@@ -6,11 +6,86 @@ let socket;
 
 //#region elements
 const hand = document.querySelector(".hand");
-/**
- * @type {HTMLDivElement}
- */
+/** @type {HTMLDivElement} */
 const pile = document.querySelector(".pile");
 const playerList = document.querySelector(".players");
+
+const startScreen = {
+	element: document.querySelector(".start-page"),
+	playerList: document.querySelector(".start-page>.players"),
+	_show: true,
+	settings: document.querySelector(".start-page>.settings"),
+	/**
+	 * @type {boolean}
+	 */
+	set show(val) {
+		this._show = val;
+		this.element.classList.toggle("show", val);
+	},
+	get show() {
+		return this._show;
+	},
+
+	addPlayer(player) {
+		if (!this.show) return;
+
+		let playerElem = document.createElement("p");
+		playerElem.dataset.id = player.ID;
+		playerElem.textContent = player.Name;
+
+		if (player.Host)
+			playerElem.classList.add("host");
+
+		this.playerList.appendChild(playerElem);
+	},
+	removePlayer(player) {
+		console.log(player.ID + " left");
+		playerList.querySelector(`[data-id='${player.ID}']`).remove();
+	},
+	set roomName(val) {
+		this.settings.querySelector("h1").textContent = val;
+	},
+
+	set creator(val) {
+		if (val)
+			this.settings.querySelector("p").textContent = "Created by " + val;
+	},
+	set host(val) {
+
+		if (val) {
+			let startButton = document.createElement('button');
+			startButton.classList.add('start');
+			startButton.textContent = "start";
+			startButton.addEventListener("click", () => {
+				socket.emit("StartGame", res => {
+					if (res.error) ShowErrorMessage(res.message);
+					else {
+						startScreen.show = false;
+					}
+
+				});
+			});
+			this.settings.appendChild(startButton);
+
+			if (RoomInfo.Secret) {
+				console.log("Creating share link.");
+				let link = document.createElement('input');
+				let url = location + "#" + socket.id;
+				link.classList.add("link");
+				link.readOnly = true;
+				link.value = url;
+				link.addEventListener("click", (e) => {
+					e.preventDefault();
+					link.setSelectionRange(0, url.length);
+					document.execCommand("copy");
+
+					ShowErrorMessage("Copied to clipboard.");
+				});
+				this.settings.appendChild(link);
+			}
+		}
+	}
+};
 //#endregion
 
 //#region constants
@@ -24,6 +99,7 @@ let RoomInfo = {
 	Name: "",
 	HasPassword: false,
 	State: 0,
+	Secret: false,
 	Players: 0,
 	MaxPlayers: 0
 };
@@ -37,8 +113,6 @@ function JoinGame() {
 	let socketID = localStorage.getItem("SocketID");
 	let Name = localStorage.getItem("name");
 
-	localStorage.removeItem("SocketID");
-
 	if (!socketID || !Name) {
 		//secret url
 		let hash = location.hash.substr(1);
@@ -48,7 +122,7 @@ function JoinGame() {
 			socketID = hash;
 			if (!Name) {
 				let message = "";
-				while (Name == "" || Name.length < 3 || !Name) {
+				while (!Name || Name == "" || Name.length < 3) {
 					Name = prompt(message + "What is your name?");
 					message = "Your name must be 3 characters long.\n";
 				}
@@ -59,6 +133,7 @@ function JoinGame() {
 			return;
 		}
 	}
+
 	Player.Name = Name;
 
 	let timeout = setTimeout(() => {
@@ -75,35 +150,70 @@ function JoinGame() {
 		clearTimeout(timeout);
 	});
 
-	socket.on("connect_error", () => location.href = "../");
+	socket.once("connect_error", () => location.href = "../");
 
 
-	socket.on("Authenticate", (callback) => {
+	socket.once("Authenticate", (callback) => {
 		let HostKey = localStorage.getItem("HostKey");
 		localStorage.removeItem("HostKey");
 		console.log("Authenticating.");
 		callback({ Name, HostKey });
 	});
-	socket.on("Authenticated", ({ Host }) => {
 
-		if (Host) {
-			Player.Host = Host;
-			InitializeHostMenu();
-		}
+	socket.once("Authenticated", info => {
+		console.log(info);
+		RoomInfo = info.Room;
+		Player.Host = info.Host;
 
-		socket.emit("info", info => RoomInfo = info);
+		startScreen.host = info.Host;
+		startScreen.roomName = RoomInfo.Name;
+		startScreen.creator = RoomInfo.Host;
+
+		info.Players.forEach(player => startScreen.addPlayer(player));
 		console.log("Authenticated.");
 
 	});
-	socket.on("Disconnect", (reason) => {
+
+	socket.on("StartGame", () => {
+		console.log("Game started.");
+		startScreen.show = false;
+	});
+
+	socket.once("Disconnect", (reason) => {
 		alert(`Connection lost.\nreason: ${reason.reason || "none"}`);
 		location.href = "../";
 	});
+
+	socket.on("PlayerJoined", player => startScreen.addPlayer(player));
+	socket.on("PlayerLeft", player => startScreen.removePlayer(player));
+
+	socket.on("HostFound", player => {
+		startScreen.creator = player.Name;
+	});
+
+	socket.on("AddedCard", (cards) => {
+		cards.forEach(card => {
+			AddCard(new Card(card));
+		});
+	});
+
+	socket.on("Pile", cards => {
+		console.log("pile");
+		cards.forEach(card => {
+			ThrowCard(new Card(card), 0, 0);
+		});
+	});
+
+	socket.on("Turn", () => {
+		hand.classList.remove("disabled");
+	});
 }
 
-function fetchGameInfo() {
-	socket.emit("info", console.log);
-}
+
+
+window.addEventListener("beforeunload", () => {
+	socket.disconnect();
+});
 //#endregion
 
 //#region data
@@ -141,9 +251,6 @@ class Card {
 //#endregion
 
 //#region HTML
-function InitializeHostMenu() {
-
-}
 
 function ShowErrorMessage(message) {
 	let alert = document.createElement("div");
@@ -249,25 +356,33 @@ pile.addEventListener("drop", ev => {
 	ev.preventDefault();
 	if (ev.dataTransfer.types.includes("uno-card")) {
 		let card = new Card(JSON.parse(ev.dataTransfer.getData("uno-card")));
-		ThrowCard(card, ev.clientX, ev.clientY);
+
+		socket.emit("ThrowCard", card, allow => {
+			console.log("allow");
+			if (allow)
+				ThrowCard(card, ev.clientX, ev.clientY);
+			else {
+				AddCard(card, "pile");
+				ShowErrorMessage("This card can't be thrown on this card.");
+			}
+		});
 	}
 });
-JoinGame();
 
 window.addEventListener('wheel', function (e) {
 	if (e.deltaY > 0)
 		hand.scrollBy({ behavior: "auto", left: 100 });
 	else hand.scrollBy({ behavior: "auto", left: -100 });
 });
-let PlayerListShown = false;
 
+let PlayerListShown = false;
 /**
  * Shows the playerlist
  */
 function ShowPlayerList() {
 	console.log("showing players");
 	playerList.innerHTML = `<h1>${RoomInfo.Name} (${RoomInfo.Players}/${RoomInfo.MaxPlayers})</h1>`;
-	socket.emit("listPlayers", playerlist => {
+	socket.emit("ListPlayers", playerlist => {
 		console.log(playerlist);
 		playerlist.forEach(player => {
 			let elem = document.createElement("p");
@@ -313,5 +428,6 @@ document.addEventListener("keyup", ev => {
 		HidePlayerList();
 	}
 });
-
 //#endregion
+
+JoinGame();

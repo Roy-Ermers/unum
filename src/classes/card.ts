@@ -3,9 +3,23 @@ export default class Card {
 	public Color: string;
 	public Sign: string;
 
-	constructor(color: string, sign: string) {
-		this.Color = color;
-		this.Sign = sign;
+	constructor(color: string | { Color: string, Sign: string }, sign?: string) {
+		if (typeof color == "object") {
+			this.Color = color.Color;
+			this.Sign = color.Sign;
+		}
+		else if (sign) {
+			this.Color = color;
+			this.Sign = sign;
+		}
+		else throw new TypeError("Missing sign.");
+	}
+
+	public CanMatch(card: Card) {
+		if (card.Color == this.Color) return true;
+		if (card.Sign == card.Sign) return true;
+
+		return false;
 	}
 
 	static PlayCards() {

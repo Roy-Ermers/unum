@@ -3,8 +3,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 let stock = [];
 class Card {
     constructor(color, sign) {
-        this.Color = color;
-        this.Sign = sign;
+        if (typeof color == "object") {
+            this.Color = color.Color;
+            this.Sign = color.Sign;
+        }
+        else if (sign) {
+            this.Color = color;
+            this.Sign = sign;
+        }
+        else
+            throw new TypeError("Missing sign.");
+    }
+    CanMatch(card) {
+        if (card.Color == this.Color)
+            return true;
+        if (card.Sign == card.Sign)
+            return true;
+        return false;
     }
     static PlayCards() {
         if (stock.length == 0) {

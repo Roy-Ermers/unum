@@ -12,6 +12,3 @@ console.log(`Uno listening on ${process.env.PORT ?? 8080}`);
 const IO = SocketIO(App.listen(process.env.PORT ?? 8080));
 
 RoomManager.Initialize(IO);
-
-RoomManager.CreateRoom("TestRoom", "1234", false, 2);
-RoomManager.CreateRoom("TestRoom2", "", false, 5);

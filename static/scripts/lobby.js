@@ -9,7 +9,7 @@
  * @property {number} State
  */
 //#region HTML
-const State = ["Waiting for players...", "Started", "Done"];
+const State = ["Waiting for players...", "Playing", "Done"];
 const RoomBrowser = document.querySelector(".room-browser");
 const loginForm = document.querySelector(".login-form");
 const usernameForm = document.querySelector(".username-form");
@@ -136,7 +136,7 @@ function AddRoom(room) {
 	let el = document.getElementById(room.ID);
 	if (el) {
 		el.classList.toggle("password", room.HasPassword);
-		el.classList.toggle("full", room.Players == room.MaxPlayers);
+		el.classList.toggle("full", room.Players == room.MaxPlayers || room.State != 0);
 		el.querySelector("h1").textContent =
 			el.dataset.name = room.Name;
 

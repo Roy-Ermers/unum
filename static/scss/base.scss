@@ -37,6 +37,11 @@ body {
 
 }
 
+hr {
+	width: 90%;
+	border-style: solid;
+}
+
 .alert {
 	position: fixed;
 	top: 5px;
@@ -82,6 +87,15 @@ body {
 			opacity: 0;
 		}
 	}
+}
+
+*::-webkit-scrollbar {
+	width: 1em;
+	background: $background;
+}
+
+*::-webkit-scrollbar-thumb {
+	background-color: $accent;
 }
 
 .close {

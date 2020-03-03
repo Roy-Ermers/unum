@@ -11,7 +11,14 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	grid-template-rows: 33vh 1fr;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 250ms ease;
 
+	&.show {
+		opacity: 1;
+		pointer-events: all;
+	}
 
 	@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
 		grid-template-columns: 1fr;
@@ -37,13 +44,22 @@
 		justify-content: center;
 		align-items: center;
 		flex-direction: column;
+		padding: 1rem;
 
 		h1 {
 			margin-bottom: 0;
 		}
 
 		p {
-			margin-top: 0;
+			margin: 0;
+		}
+
+		.link {
+			width: 100%;
+			user-select: text;
+			border-bottom: none;
+			color: blue;
+			text-decoration: underline;
 		}
 
 		.start {
@@ -68,6 +84,13 @@
 			&:last-of-type {
 				border-bottom-left-radius: 1rem;
 				border-bottom-right-radius: 1rem;
+			}
+
+			&.host {
+				background-image: url("/images/crown.png");
+				background-size: 2rem;
+				background-position: right 1rem center;
+				background-repeat: no-repeat;
 			}
 
 			display: block;

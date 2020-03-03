@@ -1,10 +1,21 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const card_1 = __importDefault(require("./card"));
+const utils_1 = require("../utils");
 class Player {
-    constructor(socket, name) {
+    constructor(socket, name, room) {
         this._cards = [];
+        this.Host = false;
+        this._ID = utils_1.GenerateID();
+        this._room = room;
         this._socket = socket;
         this._name = name;
+    }
+    get ID() {
+        return this._ID;
     }
     get SocketID() {
         var _a, _b;
@@ -21,7 +32,26 @@ class Player {
         this._socket.emit("AddedCard", Card);
     }
     setupEvents() {
-        this._socket.on("getCards", callback => callback(this._cards));
+        this._socket.on("GetCard", callback => {
+            console.log("Player " + this.Name + " requested their cards.");
+            callback(this._cards);
+        });
+        this._socket.on("ThrowCard", (_card, callback) => {
+            console.log(_card, callback);
+            let card = new card_1.default(_card);
+            if (card.CanMatch(this._room.RecentCard)) {
+                this._room.AddToPile(card);
+                callback(true);
+            }
+            else
+                callback(false);
+        });
+    }
+    TakeTurn() {
+        this._socket.emit("Turn");
+    }
+    toPublicObject() {
+        return { ID: this.ID, Name: this.Name, Cards: this.CardCount, Host: this.Host };
     }
 }
 exports.default = Player;

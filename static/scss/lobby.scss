@@ -185,6 +185,13 @@ body::after {
 				flex: 1;
 			}
 		}
+
+
+		&:empty::after {
+			content: "No rooms found.";
+			font-size: 1rem;
+			text-align: center;
+		}
 	}
 
 	.password-screen {

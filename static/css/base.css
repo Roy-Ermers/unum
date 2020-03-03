@@ -24,6 +24,11 @@ body {
   display: none !important;
 }
 
+hr {
+  width: 90%;
+  border-style: solid;
+}
+
 .alert {
   position: fixed;
   top: 5px;
@@ -64,6 +69,15 @@ body {
     top: -8rem;
     opacity: 0;
   }
+}
+
+*::-webkit-scrollbar {
+  width: 1em;
+  background: #333333;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #2b2d31;
 }
 
 .close {

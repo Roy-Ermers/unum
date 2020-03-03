@@ -67,6 +67,7 @@ export class RoomManager {
 		if (!room.Secret) {
 			room.on("update", () => this.SendUpdate());
 		}
+		room.on("delete", () => { this.Clean(); })
 		return room;
 	}
 	public static SendUpdate() {

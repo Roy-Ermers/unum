@@ -24,6 +24,11 @@ body {
   display: none !important;
 }
 
+hr {
+  width: 90%;
+  border-style: solid;
+}
+
 .alert {
   position: fixed;
   top: 5px;
@@ -64,6 +69,15 @@ body {
     top: -8rem;
     opacity: 0;
   }
+}
+
+*::-webkit-scrollbar {
+  width: 1em;
+  background: #333333;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #2b2d31;
 }
 
 .close {
@@ -261,6 +275,13 @@ input:checked ~ .toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 33vh 1fr;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+}
+.start-page.show {
+  opacity: 1;
+  pointer-events: all;
 }
 @media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
   .start-page {
@@ -283,12 +304,20 @@ input:checked ~ .toggle {
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  padding: 1rem;
 }
 .start-page .settings h1 {
   margin-bottom: 0;
 }
 .start-page .settings p {
-  margin-top: 0;
+  margin: 0;
+}
+.start-page .settings .link {
+  width: 100%;
+  user-select: text;
+  border-bottom: none;
+  color: blue;
+  text-decoration: underline;
 }
 .start-page .settings .start {
   background-image: url("/images/play.png");
@@ -314,6 +343,12 @@ input:checked ~ .toggle {
 .start-page .players p:last-of-type {
   border-bottom-left-radius: 1rem;
   border-bottom-right-radius: 1rem;
+}
+.start-page .players p.host {
+  background-image: url("/images/crown.png");
+  background-size: 2rem;
+  background-position: right 1rem center;
+  background-repeat: no-repeat;
 }
 
 .pile {
