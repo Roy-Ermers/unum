@@ -199,6 +199,7 @@ function JoinGame() {
 
 	socket.on("Pile", cards => {
 		console.log("pile");
+		if (Player.turn) return;
 		cards.forEach(card => {
 			ThrowCard(new Card(card), 0, 0);
 		});
@@ -206,7 +207,13 @@ function JoinGame() {
 
 	socket.on("Turn", () => {
 		hand.classList.remove("disabled");
+		Player.turn = true;
 	});
+
+	socket.on("EndTurn", () => {
+		hand.classList.add("disabled");
+		Player.turn = false;
+	})
 }
 
 
@@ -356,11 +363,13 @@ pile.addEventListener("drop", ev => {
 	ev.preventDefault();
 	if (ev.dataTransfer.types.includes("uno-card")) {
 		let card = new Card(JSON.parse(ev.dataTransfer.getData("uno-card")));
-
+		console.log(card);
 		socket.emit("ThrowCard", card, allow => {
-			console.log("allow");
-			if (allow)
+			console.log(allow);
+			if (allow) {
 				ThrowCard(card, ev.clientX, ev.clientY);
+				Player.turn = false;
+			}
 			else {
 				AddCard(card, "pile");
 				ShowErrorMessage("This card can't be thrown on this card.");

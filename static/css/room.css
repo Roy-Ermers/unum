@@ -335,6 +335,7 @@ input:checked ~ .toggle {
   background: #2b2d31;
   margin: 5px 0;
   padding: 1rem;
+  animation: PlayerAppear 500ms ease forwards;
 }
 .start-page .players p:first-of-type {
   border-top-left-radius: 1rem;
@@ -349,6 +350,16 @@ input:checked ~ .toggle {
   background-size: 2rem;
   background-position: right 1rem center;
   background-repeat: no-repeat;
+}
+@keyframes PlayerAppear {
+  0% {
+    opacity: 0;
+    max-height: 0;
+  }
+  100% {
+    opacity: 1;
+    max-height: 4rem;
+  }
 }
 
 .pile {
@@ -414,6 +425,9 @@ input:checked ~ .toggle {
 }
 .hand .card:last-of-type {
   margin-right: 1rem;
+}
+.hand .card.impossible {
+  filter: brightness(0.7) blur(3px);
 }
 .hand .card:hover,
 .hand .card .selected {

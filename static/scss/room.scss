@@ -97,6 +97,19 @@
 			background: base.$accent;
 			margin: 5px 0;
 			padding: 1rem;
+			animation: PlayerAppear 500ms ease forwards;
+
+			@keyframes PlayerAppear {
+				0% {
+					opacity: 0;
+					max-height: 0;
+				}
+
+				100% {
+					opacity: 1;
+					max-height: 4rem;
+				}
+			}
 		}
 	}
 }
@@ -165,6 +178,10 @@
 
 		&:last-of-type {
 			margin-right: 1rem;
+		}
+
+		&.impossible {
+			filter: brightness(0.7) blur(3px);
 		}
 
 		display: inline-block;

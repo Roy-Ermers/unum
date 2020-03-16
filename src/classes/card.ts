@@ -17,7 +17,7 @@ export default class Card {
 
 	public CanMatch(card: Card) {
 		if (card.Color == this.Color) return true;
-		if (card.Sign == card.Sign) return true;
+		if (card.Sign == this.Sign) return true;
 
 		return false;
 	}

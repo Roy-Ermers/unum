@@ -17,7 +17,7 @@ class Card {
     CanMatch(card) {
         if (card.Color == this.Color)
             return true;
-        if (card.Sign == card.Sign)
+        if (card.Sign == this.Sign)
             return true;
         return false;
     }

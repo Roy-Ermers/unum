@@ -28,6 +28,7 @@ class Room extends events_1.default {
         this.Secret = false;
         this.MaxPlayers = 6;
         this.Players = new Map();
+        this.direction = GameDirection.ClockWise;
         this.Stack = [];
         this.Pile = [];
         this._ID = utils_1.GenerateID();
@@ -109,19 +110,19 @@ class Room extends events_1.default {
      * @param socket the socket that needs to be authenticated.
      */
     AuthenticatePlayer({ Name, HostKey }, socket) {
-        var _a;
+        var _a, _b;
         if (this.ConnectedPlayers >= this.MaxPlayers) {
             socket.emit("Disconnect", { error: 429, reason: "Room is full." });
+            return;
+        }
+        if (this.Players.has(socket.id)) {
+            socket.emit("Authenticated", { Host: (_a = this.Players.get(socket.id)) === null || _a === void 0 ? void 0 : _a.Host, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
             return;
         }
         if (this.State != RoomState.WaitingForPlayers) {
             socket.emit("Disconnect", { error: 409, reason: "Game is already started." });
         }
-        if (this.Players.has(socket.id)) {
-            socket.emit("Authenticated", { Host: this.HostID == socket.id, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
-            return;
-        }
-        if (((_a = Name) === null || _a === void 0 ? void 0 : _a.length) >= 3) {
+        if (((_b = Name) === null || _b === void 0 ? void 0 : _b.length) >= 3) {
             let newPlayer = new player_1.default(socket, Name, this);
             if (HostKey == this.HostKey && !this.HostID) {
                 console.log(`Found host ${Name} of room ${this.ID}`);
@@ -167,11 +168,39 @@ class Room extends events_1.default {
         this.emit("update");
         this.shuffleCards();
         this.Players.forEach(player => {
-            player.AddCard(...this.Stack.slice(0, 7));
+            let Cards = this.Stack.slice(0, 7);
+            this.Stack = this.Stack.slice(7);
+            console.log(this.Stack.length);
+            player.AddCard(...Cards);
         });
-        this.AddToPile(...this.Stack.slice(0, 1));
+        let startCard = this.Stack.pop();
+        if (startCard)
+            this.AddToPile(startCard);
         this.currentTurn = this.pickRandomPlayer();
         (_a = this.CurrentPlayer) === null || _a === void 0 ? void 0 : _a.TakeTurn();
+    }
+    NextTurn() {
+        if (!this.CurrentPlayer)
+            throw new Error("Game isn't started yet.");
+        let players = [...this.Players.values()];
+        let index = players.indexOf(this.CurrentPlayer);
+        console.log(index + "/" + players.length);
+        if (this.direction == GameDirection.ClockWise) {
+            if (players.length == index)
+                index = 0;
+            else
+                index++;
+        }
+        else {
+            if (players.length == index)
+                index = 0;
+            else
+                index--;
+        }
+        console.log(players, index);
+        console.log("Next player " + players[index].Name);
+        players[index].TakeTurn();
+        return players[index];
     }
     /**
      * Generates an object without the password.
@@ -181,7 +210,7 @@ class Room extends events_1.default {
         return {
             ID: this._ID,
             Name: this.Name,
-            Host: (_a = Object.values(this.Players).find(x => x.SocketID == this.HostID)) === null || _a === void 0 ? void 0 : _a.Name,
+            Host: (_a = [...this.Players.values()].find(x => x.SocketID == this.HostID)) === null || _a === void 0 ? void 0 : _a.Name,
             HasPassword: this.Password != undefined && this.Password != "",
             State: this.State,
             Secret: this.Secret,

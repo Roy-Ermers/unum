@@ -44,6 +44,7 @@ export default class Room extends EventEmitter {
 
 	private Players: Map<string, Player> = new Map<string, Player>();
 	private currentTurn?: string;
+	private direction: GameDirection = GameDirection.ClockWise;
 	private Stack: Card[] = [];
 
 	private Pile: Card[] = [];
@@ -125,12 +126,12 @@ export default class Room extends EventEmitter {
 			socket.emit("Disconnect", { error: 429, reason: "Room is full." });
 			return;
 		}
+		if (this.Players.has(socket.id)) {
+			socket.emit("Authenticated", { Host: this.Players.get(socket.id)?.Host, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
+			return;
+		}
 		if (this.State != RoomState.WaitingForPlayers) {
 			socket.emit("Disconnect", { error: 409, reason: "Game is already started." })
-		}
-		if (this.Players.has(socket.id)) {
-			socket.emit("Authenticated", { Host: this.HostID == socket.id, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
-			return;
 		}
 
 		if (Name?.length >= 3) {
@@ -188,14 +189,40 @@ export default class Room extends EventEmitter {
 		this.shuffleCards();
 
 		this.Players.forEach(player => {
-			player.AddCard(...this.Stack.slice(0, 7));
+			let Cards = this.Stack.slice(0, 7);
+			this.Stack = this.Stack.slice(7);
+
+			console.log(this.Stack.length);
+			player.AddCard(...Cards);
 		});
 
-		this.AddToPile(...this.Stack.slice(0, 1));
+		let startCard = this.Stack.pop();
+		if (startCard)
+			this.AddToPile(startCard);
 
 		this.currentTurn = this.pickRandomPlayer();
 
 		this.CurrentPlayer?.TakeTurn();
+	}
+
+	public NextTurn() {
+		if (!this.CurrentPlayer) throw new Error("Game isn't started yet.");
+		let players = [...this.Players.values()];
+		let index = players.indexOf(this.CurrentPlayer);
+
+		console.log(index + "/" + players.length)
+		if (this.direction == GameDirection.ClockWise) {
+			if (players.length == index) index = 0;
+			else index++;
+		}
+		else {
+			if (players.length == index) index = 0;
+			else index--;
+		}
+		console.log(players, index);
+		console.log("Next player " + players[index].Name);
+		players[index].TakeTurn();
+		return players[index];
 	}
 	/**
 	 * Generates an object without the password.
@@ -204,7 +231,7 @@ export default class Room extends EventEmitter {
 		return {
 			ID: this._ID,
 			Name: this.Name,
-			Host: Object.values(this.Players).find(x => x.SocketID == this.HostID)?.Name,
+			Host: [...this.Players.values()].find(x => x.SocketID == this.HostID)?.Name,
 			HasPassword: this.Password != undefined && this.Password != "",
 			State: this.State,
 			Secret: this.Secret,

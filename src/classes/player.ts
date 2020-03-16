@@ -36,6 +36,7 @@ export default class Player {
 		this._room = room;
 		this._socket = socket;
 		this._name = name;
+		this.setupEvents();
 	}
 
 	public AddCard(...Card: Card[]) {
@@ -44,18 +45,21 @@ export default class Player {
 	}
 
 	setupEvents() {
+		console.log(this._socket.connected);
 		this._socket.on("GetCard", callback => {
 			console.log("Player " + this.Name + " requested their cards.");
 			callback(this._cards);
 		});
 
 		this._socket.on("ThrowCard", (_card, callback) => {
-			console.log(_card, callback)
 			let card: Card = new Card(_card);
-
+			console.log(card, this._room.RecentCard);
 			if (card.CanMatch(this._room.RecentCard)) {
 				this._room.AddToPile(card);
 				callback(true);
+
+				this._room.NextTurn();
+				this._socket.emit("EndTurn");
 			}
 			else callback(false);
 		})
