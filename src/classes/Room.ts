@@ -1,5 +1,5 @@
 import { GenerateID } from "../utils";
-import EventEmitter from "events";
+import { EventEmitter } from "events";
 import Player from "./player";
 import Card from "./card";
 export enum RoomState { WaitingForPlayers, Started, Done };
@@ -205,8 +205,10 @@ export default class Room extends EventEmitter {
 		this.CurrentPlayer?.TakeTurn();
 	}
 
-	public NextTurn() {
-		if (!this.CurrentPlayer) throw new Error("Game isn't started yet.");
+	public NextTurn(penalty?: number) {
+		if (!this.CurrentPlayer)
+			throw new Error("Game isn't started yet.");
+
 		let players = [...this.Players.values()];
 		let index = players.indexOf(this.CurrentPlayer);
 

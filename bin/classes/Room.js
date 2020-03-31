@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const utils_1 = require("../utils");
-const events_1 = __importDefault(require("events"));
+const events_1 = require("events");
 const player_1 = __importDefault(require("./player"));
 const card_1 = __importDefault(require("./card"));
 var RoomState;
@@ -20,7 +20,7 @@ var GameDirection;
     GameDirection[GameDirection["CounterClockWise"] = 1] = "CounterClockWise";
 })(GameDirection = exports.GameDirection || (exports.GameDirection = {}));
 ;
-class Room extends events_1.default {
+class Room extends events_1.EventEmitter {
     constructor(name, password, secret, maxPlayers) {
         super();
         this.Name = "";
@@ -179,7 +179,7 @@ class Room extends events_1.default {
         this.currentTurn = this.pickRandomPlayer();
         (_a = this.CurrentPlayer) === null || _a === void 0 ? void 0 : _a.TakeTurn();
     }
-    NextTurn() {
+    NextTurn(penalty) {
         if (!this.CurrentPlayer)
             throw new Error("Game isn't started yet.");
         let players = [...this.Players.values()];

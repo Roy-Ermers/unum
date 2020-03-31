@@ -46,12 +46,12 @@ export default class Player {
 
 	setupEvents() {
 		console.log(this._socket.connected);
-		this._socket.on("GetCard", callback => {
+		this._socket.on("GetCard", (callback: Function) => {
 			console.log("Player " + this.Name + " requested their cards.");
 			callback(this._cards);
 		});
 
-		this._socket.on("ThrowCard", (_card, callback) => {
+		this._socket.on("ThrowCard", (_card: Card, callback: Function) => {
 			let card: Card = new Card(_card);
 			console.log(card, this._room.RecentCard);
 			if (card.CanMatch(this._room.RecentCard)) {

@@ -34,7 +34,7 @@ class Player {
     }
     setupEvents() {
         console.log(this._socket.connected);
-        this._socket.on("GetCard", callback => {
+        this._socket.on("GetCard", (callback) => {
             console.log("Player " + this.Name + " requested their cards.");
             callback(this._cards);
         });
