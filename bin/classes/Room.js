@@ -38,7 +38,7 @@ class Room extends events_1.EventEmitter {
         this.Name = name;
         this.Password = password;
         this.Secret = secret;
-        this.MaxPlayers = (maxPlayers !== null && maxPlayers !== void 0 ? maxPlayers : 4);
+        this.MaxPlayers = maxPlayers !== null && maxPlayers !== void 0 ? maxPlayers : 4;
         this.Stack = card_1.default.PlayCards();
     }
     get ID() {
@@ -60,8 +60,8 @@ class Room extends events_1.EventEmitter {
         return this._state;
     }
     get CurrentPlayer() {
-        if (this.currentTurn)
-            return this.Players.get(this.currentTurn);
+        if (this.currentTurn !== undefined)
+            return [...this.Players.values()][this.currentTurn];
     }
     get ConnectedPlayers() {
         return this.Players.size;
@@ -94,9 +94,8 @@ class Room extends events_1.EventEmitter {
                     callback({ error: 403, message: "You are not the host." });
             });
             socket.on("disconnect", () => {
-                var _a;
                 let player = this.Players.get(socket.id);
-                socket.broadcast.emit("PlayerLeft", (_a = player) === null || _a === void 0 ? void 0 : _a.toPublicObject());
+                socket.broadcast.emit("PlayerLeft", player === null || player === void 0 ? void 0 : player.toPublicObject());
                 this.Players.delete(socket.id);
                 if (this.Players.size == 0)
                     this.emit("delete");
@@ -110,19 +109,19 @@ class Room extends events_1.EventEmitter {
      * @param socket the socket that needs to be authenticated.
      */
     AuthenticatePlayer({ Name, HostKey }, socket) {
-        var _a, _b;
-        if (this.ConnectedPlayers >= this.MaxPlayers) {
-            socket.emit("Disconnect", { error: 429, reason: "Room is full." });
-            return;
-        }
+        var _a;
         if (this.Players.has(socket.id)) {
             socket.emit("Authenticated", { Host: (_a = this.Players.get(socket.id)) === null || _a === void 0 ? void 0 : _a.Host, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
+            return;
+        }
+        if (this.ConnectedPlayers >= this.MaxPlayers) {
+            socket.emit("Disconnect", { error: 429, reason: "Room is full." });
             return;
         }
         if (this.State != RoomState.WaitingForPlayers) {
             socket.emit("Disconnect", { error: 409, reason: "Game is already started." });
         }
-        if (((_b = Name) === null || _b === void 0 ? void 0 : _b.length) >= 3) {
+        if ((Name === null || Name === void 0 ? void 0 : Name.length) >= 3) {
             let newPlayer = new player_1.default(socket, Name, this);
             if (HostKey == this.HostKey && !this.HostID) {
                 console.log(`Found host ${Name} of room ${this.ID}`);
@@ -140,6 +139,11 @@ class Room extends events_1.EventEmitter {
         socket.emit("Disconnect", { error: 417, reason: "Authenticating with invalid name." });
         setTimeout(() => socket.disconnect(false), 500);
     }
+    AddToPile(...card) {
+        var _a;
+        this.Pile.push(...card);
+        (_a = this.socket) === null || _a === void 0 ? void 0 : _a.emit("Pile", card);
+    }
     /**
      * shuffles the game cards.
      */
@@ -153,10 +157,14 @@ class Room extends events_1.EventEmitter {
         let sockets = [...this.Players.keys()];
         return sockets[Math.floor(Math.random() * sockets.length)];
     }
-    AddToPile(...card) {
-        var _a;
-        this.Pile.push(...card);
-        (_a = this.socket) === null || _a === void 0 ? void 0 : _a.emit("Pile", card);
+    pickCard() {
+        if (this.Stack.length == 0) {
+            this.Stack = this.Pile.slice(0, this.Pile.length - 1);
+            this.Pile = this.Pile.slice(0, this.Pile.length - 1);
+            this.shuffleCards();
+        }
+        //@ts-ignore
+        return this.Stack.pop();
     }
     /**
      * starts up the game
@@ -176,31 +184,34 @@ class Room extends events_1.EventEmitter {
         let startCard = this.Stack.pop();
         if (startCard)
             this.AddToPile(startCard);
-        this.currentTurn = this.pickRandomPlayer();
+        this.currentTurn = 0;
         (_a = this.CurrentPlayer) === null || _a === void 0 ? void 0 : _a.TakeTurn();
     }
     NextTurn(penalty) {
-        if (!this.CurrentPlayer)
+        var _a;
+        if (this.currentTurn === undefined)
             throw new Error("Game isn't started yet.");
         let players = [...this.Players.values()];
-        let index = players.indexOf(this.CurrentPlayer);
-        console.log(index + "/" + players.length);
+        console.log(this.currentTurn + "/" + players.length);
         if (this.direction == GameDirection.ClockWise) {
-            if (players.length == index)
-                index = 0;
+            if (this.currentTurn < this.Players.size - 1)
+                this.currentTurn++;
             else
-                index++;
+                this.currentTurn = 0;
         }
         else {
-            if (players.length == index)
-                index = 0;
+            if (this.currentTurn > 0)
+                this.currentTurn--;
             else
-                index--;
+                this.currentTurn = this.Players.size;
         }
-        console.log(players, index);
-        console.log("Next player " + players[index].Name);
-        players[index].TakeTurn();
-        return players[index];
+        console.log(this.currentTurn + "/" + players.length);
+        console.log("Next player ", (_a = players[this.currentTurn]) === null || _a === void 0 ? void 0 : _a.Name);
+        if (penalty)
+            for (let i = penalty; i >= 0; i--)
+                players[this.currentTurn].AddCard(this.pickCard());
+        players[this.currentTurn].TakeTurn();
+        return players[this.currentTurn];
     }
     /**
      * Generates an object without the password.

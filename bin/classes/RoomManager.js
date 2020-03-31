@@ -40,7 +40,7 @@ class RoomManager {
             socket.on("Authenticate", (roomID, password, callback) => {
                 let room = this.rooms.find(x => x.ID == roomID);
                 if (room) {
-                    if (room.Password == ((password !== null && password !== void 0 ? password : "")))
+                    if (room.Password == (password !== null && password !== void 0 ? password : ""))
                         callback({ SocketID: room.SocketID });
                     else
                         callback({ error: 401, message: "Password is incorrect." });
@@ -62,7 +62,7 @@ class RoomManager {
         if (!room.Secret) {
             room.on("update", () => this.SendUpdate());
         }
-        room.on("delete", () => { this.Clean(); });
+        room.on("delete", () => this.Clean());
         return room;
     }
     static SendUpdate() {

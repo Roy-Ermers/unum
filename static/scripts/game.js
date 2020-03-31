@@ -213,7 +213,7 @@ function JoinGame() {
 	socket.on("EndTurn", () => {
 		hand.classList.add("disabled");
 		Player.turn = false;
-	})
+	});
 }
 
 
@@ -240,17 +240,19 @@ class Card {
 		return `images/${this.Color}_${this.Sign}.png`;
 	}
 	/**
-	 * @param {{ Color: string; Sign: string; }|string} color
+	 * @param {{ Color: string; Sign: string; Penalty: number }|string} color
 	 * @param {string} [sign]
 	 */
-	constructor(color, sign) {
+	constructor(color, sign, penalty) {
 		if (typeof color == "object") {
 			this.Color = color.Color;
 			this.Sign = color.Sign;
+			this.Penalty = color.Penalty;
 		}
 		else {
 			this.Color = color;
 			this.Sign = sign;
+			this.Penalty = penalty || 0;
 		}
 	}
 }

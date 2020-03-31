@@ -2,20 +2,23 @@ let stock: Card[] = [];
 export default class Card {
 	public Color: string;
 	public Sign: string;
-
-	constructor(color: string | { Color: string, Sign: string }, sign?: string) {
+	public Penalty: number;
+	constructor(color: string | { Color: string, Sign: string, Penalty: number }, sign?: string, penalty?: number) {
 		if (typeof color == "object") {
 			this.Color = color.Color;
 			this.Sign = color.Sign;
+			this.Penalty = color.Penalty;
 		}
 		else if (sign) {
 			this.Color = color;
 			this.Sign = sign;
+			this.Penalty = penalty ?? 0;
 		}
 		else throw new TypeError("Missing sign.");
 	}
 
 	public CanMatch(card: Card) {
+		if (this.Color == "special") return true;
 		if (card.Color == this.Color) return true;
 		if (card.Sign == this.Sign) return true;
 
@@ -24,12 +27,11 @@ export default class Card {
 
 	static PlayCards() {
 		if (stock.length == 0) {
-
 			let colors = ["blue", "green", "red", "yellow"];
 			for (let color = 0; color < colors.length; color++) {
 
 				stock.push(new Card("special", "color"));
-				stock.push(new Card("special", "4"));
+				stock.push(new Card("special", "4", 4));
 
 				stock.push(new Card(colors[color], "0"));
 
@@ -43,8 +45,8 @@ export default class Card {
 					stock.push(new Card(colors[color], "reverse"));
 					stock.push(new Card(colors[color], "reverse"));
 
-					stock.push(new Card(colors[color], "picker"));
-					stock.push(new Card(colors[color], "picker"));
+					stock.push(new Card(colors[color], "picker", 2));
+					stock.push(new Card(colors[color], "picker", 2));
 				}
 			}
 		}

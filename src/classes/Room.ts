@@ -43,15 +43,15 @@ export default class Room extends EventEmitter {
 	public HostID?: string;
 
 	private Players: Map<string, Player> = new Map<string, Player>();
-	private currentTurn?: string;
+	private currentTurn?: number;
 	private direction: GameDirection = GameDirection.ClockWise;
 	private Stack: Card[] = [];
 
 	private Pile: Card[] = [];
 
 	get CurrentPlayer() {
-		if (this.currentTurn)
-			return this.Players.get(this.currentTurn);
+		if (this.currentTurn !== undefined)
+			return [...this.Players.values()][this.currentTurn];
 	}
 	get ConnectedPlayers() {
 		return this.Players.size;
@@ -122,12 +122,12 @@ export default class Room extends EventEmitter {
 	 * @param socket the socket that needs to be authenticated.
 	 */
 	AuthenticatePlayer({ Name, HostKey }: { Name: string, HostKey: string }, socket: SocketIO.Socket) {
-		if (this.ConnectedPlayers >= this.MaxPlayers) {
-			socket.emit("Disconnect", { error: 429, reason: "Room is full." });
-			return;
-		}
 		if (this.Players.has(socket.id)) {
 			socket.emit("Authenticated", { Host: this.Players.get(socket.id)?.Host, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
+			return;
+		}
+		if (this.ConnectedPlayers >= this.MaxPlayers) {
+			socket.emit("Disconnect", { error: 429, reason: "Room is full." });
 			return;
 		}
 		if (this.State != RoomState.WaitingForPlayers) {
@@ -156,9 +156,14 @@ export default class Room extends EventEmitter {
 		}
 
 
-		socket.emit("Disconnect", { error: 417, reason: "Authenticating with invalid name." })
+		socket.emit("Disconnect", { error: 417, reason: "Authenticating with invalid name." });
 
 		setTimeout(() => socket.disconnect(false), 500);
+	}
+
+	public AddToPile(...card: Card[]) {
+		this.Pile.push(...card);
+		this.socket?.emit("Pile", card);
 	}
 
 	/**
@@ -170,13 +175,20 @@ export default class Room extends EventEmitter {
 			[this.Stack[i], this.Stack[j]] = [this.Stack[j], this.Stack[i]];
 		}
 	}
+
 	private pickRandomPlayer() {
 		let sockets = [...this.Players.keys()];
 		return sockets[Math.floor(Math.random() * sockets.length)];
 	}
-	public AddToPile(...card: Card[]) {
-		this.Pile.push(...card);
-		this.socket?.emit("Pile", card);
+
+	public pickCard(): Card {
+		if (this.Stack.length == 0) {
+			this.Stack = this.Pile.slice(0, this.Pile.length - 1);
+			this.Pile = this.Pile.slice(0, this.Pile.length - 1);
+			this.shuffleCards();
+		}
+		//@ts-ignore
+		return this.Stack.pop();
 	}
 	/**
 	 * starts up the game
@@ -200,31 +212,41 @@ export default class Room extends EventEmitter {
 		if (startCard)
 			this.AddToPile(startCard);
 
-		this.currentTurn = this.pickRandomPlayer();
+		this.currentTurn = 0;
 
 		this.CurrentPlayer?.TakeTurn();
 	}
 
 	public NextTurn(penalty?: number) {
-		if (!this.CurrentPlayer)
+		if (this.currentTurn === undefined)
 			throw new Error("Game isn't started yet.");
 
 		let players = [...this.Players.values()];
-		let index = players.indexOf(this.CurrentPlayer);
 
-		console.log(index + "/" + players.length)
+		console.log(this.currentTurn + "/" + players.length)
 		if (this.direction == GameDirection.ClockWise) {
-			if (players.length == index) index = 0;
-			else index++;
+			if (this.currentTurn < this.Players.size - 1)
+				this.currentTurn++;
+			else
+				this.currentTurn = 0;
 		}
 		else {
-			if (players.length == index) index = 0;
-			else index--;
+			if (this.currentTurn > 0)
+				this.currentTurn--;
+			else
+				this.currentTurn = this.Players.size;
 		}
-		console.log(players, index);
-		console.log("Next player " + players[index].Name);
-		players[index].TakeTurn();
-		return players[index];
+
+		console.log(this.currentTurn + "/" + players.length)
+
+		console.log("Next player ", players[this.currentTurn]?.Name);
+
+		if (penalty)
+			for (let i = penalty; i >= 0; i--)
+				players[this.currentTurn].AddCard(this.pickCard());
+
+		players[this.currentTurn].TakeTurn();
+		return players[this.currentTurn];
 	}
 	/**
 	 * Generates an object without the password.
