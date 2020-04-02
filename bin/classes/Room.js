@@ -38,7 +38,7 @@ class Room extends events_1.EventEmitter {
         this.Name = name;
         this.Password = password;
         this.Secret = secret;
-        this.MaxPlayers = maxPlayers !== null && maxPlayers !== void 0 ? maxPlayers : 4;
+        this.MaxPlayers = (maxPlayers !== null && maxPlayers !== void 0 ? maxPlayers : 4);
         this.Stack = card_1.default.PlayCards();
     }
     get ID() {
@@ -70,17 +70,14 @@ class Room extends events_1.EventEmitter {
         return this.Pile[this.Pile.length - 1];
     }
     startupSocket(io) {
-        console.log(`starting up socket for ${this.Name}`);
+        this.Log(`starting up socket for ${this.Name}`);
         this.socket = io;
         this.socket.on("connection", socket => {
-            console.log(`Got connection from ${socket.id} to room ${this.Name}`);
             socket.emit("Authenticate", (res) => this.AuthenticatePlayer(res, socket));
             socket.on("RoomInfo", callback => {
-                console.log("info for " + this.Name);
                 callback(this.toPublicObject());
             });
             socket.on("ListPlayers", callback => {
-                console.log("sending player info");
                 callback([...this.Players.values()].map(x => x.toPublicObject()));
             });
             socket.on("StartGame", callback => {
@@ -94,8 +91,10 @@ class Room extends events_1.EventEmitter {
                     callback({ error: 403, message: "You are not the host." });
             });
             socket.on("disconnect", () => {
+                var _a, _b;
                 let player = this.Players.get(socket.id);
-                socket.broadcast.emit("PlayerLeft", player === null || player === void 0 ? void 0 : player.toPublicObject());
+                this.Log(((_a = player) === null || _a === void 0 ? void 0 : _a.Name) + " left");
+                socket.broadcast.emit("PlayerLeft", (_b = player) === null || _b === void 0 ? void 0 : _b.toPublicObject());
                 this.Players.delete(socket.id);
                 if (this.Players.size == 0)
                     this.emit("delete");
@@ -109,7 +108,7 @@ class Room extends events_1.EventEmitter {
      * @param socket the socket that needs to be authenticated.
      */
     AuthenticatePlayer({ Name, HostKey }, socket) {
-        var _a;
+        var _a, _b;
         if (this.Players.has(socket.id)) {
             socket.emit("Authenticated", { Host: (_a = this.Players.get(socket.id)) === null || _a === void 0 ? void 0 : _a.Host, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
             return;
@@ -121,16 +120,17 @@ class Room extends events_1.EventEmitter {
         if (this.State != RoomState.WaitingForPlayers) {
             socket.emit("Disconnect", { error: 409, reason: "Game is already started." });
         }
-        if ((Name === null || Name === void 0 ? void 0 : Name.length) >= 3) {
+        if (((_b = Name) === null || _b === void 0 ? void 0 : _b.length) >= 3) {
             let newPlayer = new player_1.default(socket, Name, this);
             if (HostKey == this.HostKey && !this.HostID) {
-                console.log(`Found host ${Name} of room ${this.ID}`);
+                this.Log(`${Name} is the host.`);
                 delete this._hostKey;
                 this.HostID = socket.id;
                 newPlayer.Host = true;
                 socket.emit("HostFound", newPlayer.toPublicObject());
             }
             this.Players.set(socket.id, newPlayer);
+            this.Log(`Player ${newPlayer.Name} joined.`);
             socket.emit("Authenticated", { Host: this.HostID == socket.id, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
             socket.broadcast.emit("PlayerJoined", newPlayer.toPublicObject());
             this.emit("update");
@@ -171,15 +171,14 @@ class Room extends events_1.EventEmitter {
      */
     StartGame() {
         var _a;
-        console.log(`Game for room ${this.Name} started`);
+        this.Log(`Game started`);
         this.State = RoomState.Started;
         this.emit("update");
         this.shuffleCards();
         this.Players.forEach(player => {
             let Cards = this.Stack.slice(0, 7);
             this.Stack = this.Stack.slice(7);
-            console.log(this.Stack.length);
-            player.AddCard(...Cards);
+            player.AddCard("stock", ...Cards);
         });
         let startCard = this.Stack.pop();
         if (startCard)
@@ -187,12 +186,18 @@ class Room extends events_1.EventEmitter {
         this.currentTurn = 0;
         (_a = this.CurrentPlayer) === null || _a === void 0 ? void 0 : _a.TakeTurn();
     }
-    NextTurn(penalty) {
+    ChangeDirection() {
         var _a;
+        if (this.direction == GameDirection.ClockWise)
+            this.direction = GameDirection.CounterClockWise;
+        else
+            this.direction = GameDirection.ClockWise;
+        this.Log("Direction changed to " + GameDirection[this.direction]);
+        (_a = this.socket) === null || _a === void 0 ? void 0 : _a.emit("ChangeDirection", this.direction);
+    }
+    SkipTurn() {
         if (this.currentTurn === undefined)
             throw new Error("Game isn't started yet.");
-        let players = [...this.Players.values()];
-        console.log(this.currentTurn + "/" + players.length);
         if (this.direction == GameDirection.ClockWise) {
             if (this.currentTurn < this.Players.size - 1)
                 this.currentTurn++;
@@ -205,11 +210,28 @@ class Room extends events_1.EventEmitter {
             else
                 this.currentTurn = this.Players.size;
         }
-        console.log(this.currentTurn + "/" + players.length);
-        console.log("Next player ", (_a = players[this.currentTurn]) === null || _a === void 0 ? void 0 : _a.Name);
+    }
+    NextTurn(penalty) {
+        var _a;
+        if (this.currentTurn === undefined)
+            throw new Error("Game isn't started yet.");
+        let players = [...this.Players.values()];
+        if (this.direction == GameDirection.ClockWise) {
+            if (this.currentTurn < this.Players.size - 1)
+                this.currentTurn++;
+            else
+                this.currentTurn = 0;
+        }
+        else {
+            if (this.currentTurn > 0)
+                this.currentTurn--;
+            else
+                this.currentTurn = this.Players.size - 1;
+        }
+        this.Log(`It's player ${(_a = players[this.currentTurn]) === null || _a === void 0 ? void 0 : _a.Name} turn.`);
         if (penalty)
             for (let i = penalty; i >= 0; i--)
-                players[this.currentTurn].AddCard(this.pickCard());
+                players[this.currentTurn].AddCard("stock", this.pickCard());
         players[this.currentTurn].TakeTurn();
         return players[this.currentTurn];
     }
@@ -228,6 +250,13 @@ class Room extends events_1.EventEmitter {
             Players: this.ConnectedPlayers,
             MaxPlayers: this.MaxPlayers
         };
+    }
+    //#debug
+    Log(...message) {
+        console.log(`[${this.ID} - "${this.Name}"] ${message}`);
+    }
+    Warn(...message) {
+        console.warn(`[${this.ID} - "${this.Name}"] ${message}`);
     }
 }
 exports.default = Room;

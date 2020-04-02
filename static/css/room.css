@@ -416,7 +416,7 @@ input:checked ~ .toggle {
   height: 15vmax;
   margin-right: -3vmax;
   outline: none;
-  transition: margin 250ms ease, transform 250ms ease, filter 250ms ease;
+  transition: margin 500ms ease, transform 250ms ease, filter 250ms ease;
   transform: rotate(3deg);
   -webkit-user-drag: element;
 }
@@ -427,7 +427,11 @@ input:checked ~ .toggle {
   margin-right: 1rem;
 }
 .hand .card.impossible {
-  filter: brightness(0.7) blur(3px);
+  filter: brightness(0.7);
+  margin-right: -10vmax;
+}
+.hand .card.impossible:last-child {
+  margin-right: 0;
 }
 .hand .card:hover,
 .hand .card .selected {

@@ -181,7 +181,12 @@
 		}
 
 		&.impossible {
-			filter: brightness(0.7) blur(3px);
+			filter: brightness(0.7);
+			margin-right: -10vmax;
+
+			&:last-child {
+				margin-right: 0;
+			}
 		}
 
 		display: inline-block;
@@ -190,7 +195,7 @@
 		margin-right: -3vmax;
 		outline: none;
 
-		transition: margin 250ms ease,
+		transition: margin 500ms ease,
 		transform 250ms ease,
 		filter 250ms ease;
 

@@ -60,6 +60,7 @@ export default class Room extends EventEmitter {
 	get RecentCard() {
 		return this.Pile[this.Pile.length - 1];
 	}
+
 	constructor(name: string, password: string, secret: boolean, maxPlayers?: number) {
 		super();
 		this._ID = GenerateID();
@@ -77,20 +78,17 @@ export default class Room extends EventEmitter {
 	}
 
 	public startupSocket(io: SocketIO.Namespace) {
-		console.log(`starting up socket for ${this.Name}`);
+		this.Log(`starting up socket for ${this.Name}`);
 
 		this.socket = io;
 
 		this.socket.on("connection", socket => {
-			console.log(`Got connection from ${socket.id} to room ${this.Name}`)
 			socket.emit("Authenticate", (res: { Name: string; HostKey: string }) => this.AuthenticatePlayer(res, socket));
 
 			socket.on("RoomInfo", callback => {
-				console.log("info for " + this.Name);
 				callback(this.toPublicObject())
 			});
 			socket.on("ListPlayers", callback => {
-				console.log("sending player info")
 				callback([...this.Players.values()].map(x => x.toPublicObject()))
 			});
 
@@ -106,9 +104,9 @@ export default class Room extends EventEmitter {
 			})
 			socket.on("disconnect", () => {
 				let player = this.Players.get(socket.id);
+				this.Log(player?.Name + " left");
 				socket.broadcast.emit("PlayerLeft", player?.toPublicObject())
 				this.Players.delete(socket.id);
-
 				if (this.Players.size == 0)
 					this.emit("delete");
 				else
@@ -137,7 +135,7 @@ export default class Room extends EventEmitter {
 		if (Name?.length >= 3) {
 			let newPlayer: Player = new Player(socket, Name, this);
 			if (HostKey == this.HostKey && !this.HostID) {
-				console.log(`Found host ${Name} of room ${this.ID}`);
+				this.Log(`${Name} is the host.`);
 
 				delete this._hostKey;
 
@@ -147,7 +145,7 @@ export default class Room extends EventEmitter {
 			}
 
 			this.Players.set(socket.id, newPlayer);
-
+			this.Log(`Player ${newPlayer.Name} joined.`)
 			socket.emit("Authenticated", { Host: this.HostID == socket.id, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
 
 			socket.broadcast.emit("PlayerJoined", newPlayer.toPublicObject());
@@ -194,7 +192,7 @@ export default class Room extends EventEmitter {
 	 * starts up the game
 	 */
 	public StartGame() {
-		console.log(`Game for room ${this.Name} started`);
+		this.Log(`Game started`);
 		this.State = RoomState.Started;
 		this.emit("update");
 
@@ -203,9 +201,7 @@ export default class Room extends EventEmitter {
 		this.Players.forEach(player => {
 			let Cards = this.Stack.slice(0, 7);
 			this.Stack = this.Stack.slice(7);
-
-			console.log(this.Stack.length);
-			player.AddCard(...Cards);
+			player.AddCard("stock", ...Cards);
 		});
 
 		let startCard = this.Stack.pop();
@@ -217,13 +213,18 @@ export default class Room extends EventEmitter {
 		this.CurrentPlayer?.TakeTurn();
 	}
 
-	public NextTurn(penalty?: number) {
+	public ChangeDirection() {
+		if (this.direction == GameDirection.ClockWise)
+			this.direction = GameDirection.CounterClockWise;
+		else this.direction = GameDirection.ClockWise;
+		this.Log("Direction changed to " + GameDirection[this.direction]);
+		this.socket?.emit("ChangeDirection", this.direction);
+	}
+
+	public SkipTurn() {
 		if (this.currentTurn === undefined)
 			throw new Error("Game isn't started yet.");
 
-		let players = [...this.Players.values()];
-
-		console.log(this.currentTurn + "/" + players.length)
 		if (this.direction == GameDirection.ClockWise) {
 			if (this.currentTurn < this.Players.size - 1)
 				this.currentTurn++;
@@ -236,14 +237,32 @@ export default class Room extends EventEmitter {
 			else
 				this.currentTurn = this.Players.size;
 		}
+	}
 
-		console.log(this.currentTurn + "/" + players.length)
+	public NextTurn(penalty?: number) {
+		if (this.currentTurn === undefined)
+			throw new Error("Game isn't started yet.");
 
-		console.log("Next player ", players[this.currentTurn]?.Name);
+		let players = [...this.Players.values()];
+
+		if (this.direction == GameDirection.ClockWise) {
+			if (this.currentTurn < this.Players.size - 1)
+				this.currentTurn++;
+			else
+				this.currentTurn = 0;
+		}
+		else {
+			if (this.currentTurn > 0)
+				this.currentTurn--;
+			else
+				this.currentTurn = this.Players.size - 1;
+		}
+
+		this.Log(`It's player ${players[this.currentTurn]?.Name} turn.`);
 
 		if (penalty)
 			for (let i = penalty; i >= 0; i--)
-				players[this.currentTurn].AddCard(this.pickCard());
+				players[this.currentTurn].AddCard("stock", this.pickCard());
 
 		players[this.currentTurn].TakeTurn();
 		return players[this.currentTurn];
@@ -263,4 +282,15 @@ export default class Room extends EventEmitter {
 			MaxPlayers: this.MaxPlayers
 		}
 	}
+
+	//#debug
+	public Log(...message: any[]) {
+		console.log(`[${this.ID} - "${this.Name}"] ${message}`);
+	}
+
+	public Warn(...message: any[]) {
+		console.warn(`[${this.ID} - "${this.Name}"] ${message}`);
+	}
+
+	//#enddebug
 }

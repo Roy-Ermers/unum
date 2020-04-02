@@ -70,6 +70,7 @@ export class RoomManager {
 		room.on("delete", () => this.Clean());
 		return room;
 	}
+
 	public static SendUpdate() {
 		console.log("[lobby] sending update");
 		this.Socket.emit("update",
@@ -78,6 +79,7 @@ export class RoomManager {
 				.map(x => x.toPublicObject()
 				));
 	}
+	
 	public static Clean() {
 		this.Rooms.filter(x => x.ConnectedPlayers == 0).forEach(x => this.RemoveRoom(x.ID));
 	}

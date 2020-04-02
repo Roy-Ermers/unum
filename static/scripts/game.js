@@ -9,7 +9,7 @@ const hand = document.querySelector(".hand");
 /** @type {HTMLDivElement} */
 const pile = document.querySelector(".pile");
 const playerList = document.querySelector(".players");
-
+const stack = document.querySelector(".stack");
 const startScreen = {
 	element: document.querySelector(".start-page"),
 	playerList: document.querySelector(".start-page>.players"),
@@ -26,6 +26,9 @@ const startScreen = {
 		return this._show;
 	},
 
+	/**
+	 * @param {{ ID: string; Name: string; Host: any; }} player
+	 */
 	addPlayer(player) {
 		if (!this.show) return;
 
@@ -38,18 +41,39 @@ const startScreen = {
 
 		this.playerList.appendChild(playerElem);
 	},
+	/**
+	 * @param {{ ID: string; }} player
+	 */
 	removePlayer(player) {
 		console.log(player.ID + " left");
 		playerList.querySelector(`[data-id='${player.ID}']`).remove();
 	},
+	/**
+	 * @param {string} val
+	 */
+	/**
+	 * @param {string} val
+	 */
 	set roomName(val) {
 		this.settings.querySelector("h1").textContent = val;
 	},
 
+	/**
+	 * @param {string} val
+	 */
+	/**
+	 * @param {string} val
+	 */
 	set creator(val) {
 		if (val)
 			this.settings.querySelector("p").textContent = "Created by " + val;
 	},
+	/**
+	 * @param {any} val
+	 */
+	/**
+	 * @param {any} val
+	 */
 	set host(val) {
 
 		if (val) {
@@ -57,6 +81,9 @@ const startScreen = {
 			startButton.classList.add('start');
 			startButton.textContent = "start";
 			startButton.addEventListener("click", () => {
+				/**
+				 * @param {{ error: any; message: any; }} res
+				 */
 				socket.emit("StartGame", res => {
 					if (res.error) ShowErrorMessage(res.message);
 					else {
@@ -106,7 +133,8 @@ let RoomInfo = {
 
 let Player = {
 	Name: "",
-	Host: false
+	Host: false,
+	turn: false
 };
 
 function JoinGame() {
@@ -116,9 +144,7 @@ function JoinGame() {
 	if (!socketID || !Name) {
 		//secret url
 		let hash = location.hash.substr(1);
-		console.log(hash);
 		if (hash.match(/([A-z0-9]){32}/)) {
-			console.log("hash is an room id.");
 			socketID = hash;
 			if (!Name) {
 				let message = "";
@@ -161,7 +187,6 @@ function JoinGame() {
 	});
 
 	socket.once("Authenticated", info => {
-		console.log(info);
 		RoomInfo = info.Room;
 		Player.Host = info.Host;
 
@@ -192,26 +217,30 @@ function JoinGame() {
 	});
 
 	socket.on("AddedCard", (cards) => {
-		cards.forEach(card => {
-			AddCard(new Card(card));
+		let timings = [];
+		cards.Card.forEach((card, i) => {
+			setTimeout(() => {
+				timings.push(AddCard(new Card(card), cards.source));
+			}, i * 30)
 		});
 	});
 
 	socket.on("Pile", cards => {
-		console.log("pile");
 		if (Player.turn) return;
 		cards.forEach(card => {
-			ThrowCard(new Card(card), 0, 0);
+			ThrowCard(new Card(card));
 		});
 	});
 
 	socket.on("Turn", () => {
 		hand.classList.remove("disabled");
 		Player.turn = true;
+		FilterCards();
 	});
 
 	socket.on("EndTurn", () => {
 		hand.classList.add("disabled");
+		[...hand.children].forEach(x => x.classList.remove("impossible"));
 		Player.turn = false;
 	});
 }
@@ -224,11 +253,13 @@ window.addEventListener("beforeunload", () => {
 //#endregion
 
 //#region data
+
+let recentCard;
 class Card {
 
 	get URL() {
-		if (this.Color == "special") {
-			if (this.Sign == "4")
+		if (this.Color == "wild") {
+			if (this.Sign == "draw4")
 				return `/images/wild_pick_four.png`;
 			else if (this.Sign == "color")
 				return `images/wild_color_changer.png`;
@@ -239,9 +270,13 @@ class Card {
 		}
 		return `images/${this.Color}_${this.Sign}.png`;
 	}
+	get name() {
+		return `${this.Color} ${this.Sign}`;
+	}
 	/**
 	 * @param {{ Color: string; Sign: string; Penalty: number }|string} color
 	 * @param {string} [sign]
+	 * @param {number} [penalty]
 	 */
 	constructor(color, sign, penalty) {
 		if (typeof color == "object") {
@@ -255,12 +290,26 @@ class Card {
 			this.Penalty = penalty || 0;
 		}
 	}
+
+	/**
+	 * @param {Card} card
+	 */
+	CanMatch(card) {
+		if (this.Color == "wild") return true;
+		if (card.Color == this.Color) return true;
+		if (card.Sign == this.Sign) return true;
+
+		return false;
+	}
 }
 
 //#endregion
 
 //#region HTML
 
+/**
+ * @param {string} message
+ */
 function ShowErrorMessage(message) {
 	let alert = document.createElement("div");
 	alert.classList.add("alert");
@@ -277,11 +326,12 @@ function ShowErrorMessage(message) {
 function AddCard(card, source) {
 	const img = document.createElement("img");
 	img.classList.add("card");
-	if (source == "stock")
-		img.classList.add("from-stock");
+	if (source)
+		img.classList.add("from-" + source);
 	img.src = card.URL;
 	img.draggable = true;
-
+	img.dataset.card = card.name;
+	img.card = card;
 	if (isTouch)
 		img.addEventListener("click", () => {
 			ThrowCard(card, window.innerWidth / 2, window.innerHeight / 2);
@@ -295,7 +345,6 @@ function AddCard(card, source) {
 		ev.dataTransfer.setDragImage(img, 100, 100);
 		ev.dataTransfer.clearData();
 		ev.dataTransfer.setData("uno-card", JSON.stringify(card));
-		console.log(ev.dataTransfer.types);
 	});
 
 	img.addEventListener('drag', (ev) => {
@@ -303,11 +352,20 @@ function AddCard(card, source) {
 	});
 	img.addEventListener("dragend", ev => {
 		if (ev.dataTransfer.dropEffect == "move") {
-			console.log("drop succeeded");
 			RemoveCard();
 		}
 	});
-	hand.appendChild(img);
+
+	if (Player.turn) {
+		let match = card.CanMatch(recentCard);
+		img.classList.toggle("impossible", !match);
+
+		if (match)
+			hand.insertAdjacentElement("beforeend", img);
+		else hand.insertAdjacentElement("afterbegin", img);
+	}
+	else
+		hand.appendChild(img);
 
 	function RemoveCard() {
 		img.animate([
@@ -322,11 +380,26 @@ function AddCard(card, source) {
 			}).addEventListener("finish", () => img.remove());
 	}
 }
+
+function FilterCards() {
+	if (!recentCard) return;
+
+	[...hand.children].forEach(card => {
+		let match = card.card.CanMatch(recentCard);
+		if (match) {
+			card.parentElement.insertAdjacentElement("beforeend", card);
+		}
+		card.classList.remove("from-stock", "from-pile");
+
+		if (Player.turn)
+			card.classList.toggle("impossible", !match);
+	});
+}
 /**
  * 
  * @param {Card} card 
- * @param {number} offsetX 
- * @param {number} offsetY 
+ * @param {number} [offsetX]
+ * @param {number} [offsetY]
  */
 function ThrowCard(card, offsetX, offsetY) {
 	const img = document.createElement("img");
@@ -334,6 +407,9 @@ function ThrowCard(card, offsetX, offsetY) {
 	img.src = card.URL;
 	pile.appendChild(img);
 	let randomRotation = Math.random() * 360;
+	recentCard = card;
+	offsetX |= window.innerWidth / 2;
+	offsetY |= window.innerHeight / 2;
 	img.animate([
 		{
 			top: offsetY + "px",
@@ -361,16 +437,15 @@ pile.addEventListener("dragover", ev => {
 });
 
 pile.addEventListener("drop", ev => {
-	console.log(ev);
 	ev.preventDefault();
 	if (ev.dataTransfer.types.includes("uno-card")) {
 		let card = new Card(JSON.parse(ev.dataTransfer.getData("uno-card")));
-		console.log(card);
+		/**
+		 * @param {any} allow
+		 */
 		socket.emit("ThrowCard", card, allow => {
-			console.log(allow);
 			if (allow) {
 				ThrowCard(card, ev.clientX, ev.clientY);
-				Player.turn = false;
 			}
 			else {
 				AddCard(card, "pile");
@@ -380,6 +455,10 @@ pile.addEventListener("drop", ev => {
 	}
 });
 
+stack.addEventListener("click", () => {
+	if (!Player.turn) return;
+	socket.emit("TakeCard");
+});
 window.addEventListener('wheel', function (e) {
 	if (e.deltaY > 0)
 		hand.scrollBy({ behavior: "auto", left: 100 });
@@ -391,10 +470,14 @@ let PlayerListShown = false;
  * Shows the playerlist
  */
 function ShowPlayerList() {
-	console.log("showing players");
 	playerList.innerHTML = `<h1>${RoomInfo.Name} (${RoomInfo.Players}/${RoomInfo.MaxPlayers})</h1>`;
+	/**
+	 * @param {any[]} playerlist
+	 */
 	socket.emit("ListPlayers", playerlist => {
-		console.log(playerlist);
+		/**
+		 * @param {{ Name: string; Cards: string | number; }} player
+		 */
 		playerlist.forEach(player => {
 			let elem = document.createElement("p");
 			elem.textContent = player.Name;
@@ -420,8 +503,6 @@ function ShowPlayerList() {
 	playerList.classList.add("show");
 }
 function HidePlayerList() {
-	console.log("hiding players");
-
 	playerList.classList.remove("show");
 }
 

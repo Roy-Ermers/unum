@@ -1,7 +1,6 @@
 import SocketIO from "socket.io";
 import Card from "./card";
 import { GenerateID } from "../utils";
-import eventEmitter from "events";
 import Room from "./Room";
 export default class Player {
 
@@ -41,54 +40,77 @@ export default class Player {
 		this.setupEvents();
 	}
 
-	public AddCard(...Card: Card[]) {
+	public AddCard(source: string, ...Card: Card[]) {
 		this._cards.push(...Card);
-		this._socket.emit("AddedCard", Card);
+		this._socket.emit("AddedCard", { Card, source });
 	}
 
-	public HasCard(suit: string, sign?: string) {
-		return this._cards.some(card => {
-			if (sign) {
-				if (suit != undefined)
-					return card.Color == suit && card.Sign == sign;
+	public RemoveCard(card: Card) {
+		let index = this._cards.findIndex(x => card.Equals(x));
+		if (index < 0)
+			throw new Error("Card was not found.");
 
-				return card.Sign == sign;
-			}
+		this._cards.splice(index, 1);
+	}
 
-			return card.Color == suit || card.Sign == suit;
-		});
+	public HasCard(match: Card) {
+		return this._cards.some(card => card.Equals(match));
 	}
 
 	setupEvents() {
 		console.log(this._socket.connected);
 		this._socket.on("GetCard", (callback: Function) => {
-			console.log("Player " + this.Name + " requested their cards.");
 			callback(this._cards);
 		});
-
+		this._socket.on("TakeCard", () => {
+			this.TakeCard();
+		});
 		this._socket.on("ThrowCard", (_card: Card, callback: Function) => {
-			let card: Card = new Card(_card);
-
-			if (!this._cards.some(x => x.Color == card.Color && x.Sign == card.Sign && x.Penalty == card.Penalty)) {
-				callback(false);
-				this._socket.emit("Disconnect", { error: 423, reason: "Cheating is not allowed." })
-				this._socket.disconnect(true);
-				console.warn(this.Name + " is cheating.");
-			}
-
-			console.log(card, this._room.RecentCard);
-			if (card.CanMatch(this._room.RecentCard)) {
-				this._room.AddToPile(card);
-				callback(true);
-				this._room.NextTurn(card.Penalty);
-				this._socket.emit("EndTurn");
-			}
-			else callback(false);
+			this.ThrowCard(_card, callback);
 		})
 	}
 
+	private ThrowCard(_card: Card, callback: Function) {
+		let card: Card = new Card(_card);
+		if (!this.HasCard(_card) || this._room.CurrentPlayer != this) {
+			callback(false);
+			this._socket.emit("Disconnect", { error: 423, reason: "Cheating is not allowed." });
+			this._socket.disconnect(true);
+			this._room.Warn(this.Name + " is cheating.");
+		}
+
+		if (card.CanMatch(this._room.RecentCard)) {
+
+			this._room.AddToPile(card);
+			this.RemoveCard(card);
+			callback(true);
+
+			this._socket.emit("EndTurn");
+
+			if (card.Sign == "skip")
+				this._room.SkipTurn();
+
+			else if (card.Sign == "reverse")
+				this._room.ChangeDirection();
+
+			this._room.NextTurn(card.Penalty);
+		}
+		else
+			callback(false);
+	}
+
+	TakeCard() {
+		if (this._cards.some(card => card.CanMatch(this._room.RecentCard))) {
+			this._room.Warn("Player " + this.Name + " has matching cards, but tried to draw anyway.")
+			return;
+		}
+		let card = this._room.pickCard();
+
+		this.AddCard("stock", card);
+	}
+
 	TakeTurn() {
-		this._socket.emit("Turn")
+		this._socket.emit("Turn");
 	}
 
 	toPublicObject() {

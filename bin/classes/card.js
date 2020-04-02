@@ -11,13 +11,13 @@ class Card {
         else if (sign) {
             this.Color = color;
             this.Sign = sign;
-            this.Penalty = penalty !== null && penalty !== void 0 ? penalty : 0;
+            this.Penalty = (penalty !== null && penalty !== void 0 ? penalty : 0);
         }
         else
             throw new TypeError("Missing sign.");
     }
     CanMatch(card) {
-        if (this.Color == "special")
+        if (this.Color == "wild")
             return true;
         if (card.Color == this.Color)
             return true;
@@ -29,8 +29,8 @@ class Card {
         if (stock.length == 0) {
             let colors = ["blue", "green", "red", "yellow"];
             for (let color = 0; color < colors.length; color++) {
-                stock.push(new Card("special", "color"));
-                stock.push(new Card("special", "4", 4));
+                stock.push(new Card("wild", "color"));
+                stock.push(new Card("wild", "draw4", 4));
                 stock.push(new Card(colors[color], "0"));
                 for (let two = 0; two < 2; two++) {
                     for (let numbers = 1; numbers < 10; numbers++) {
@@ -46,6 +46,9 @@ class Card {
             }
         }
         return stock;
+    }
+    Equals(card) {
+        return this.Color == card.Color && this.Sign == card.Sign && this.Penalty == card.Penalty;
     }
 }
 exports.default = Card;

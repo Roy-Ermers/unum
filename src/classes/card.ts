@@ -18,7 +18,7 @@ export default class Card {
 	}
 
 	public CanMatch(card: Card) {
-		if (this.Color == "special") return true;
+		if (this.Color == "wild") return true;
 		if (card.Color == this.Color) return true;
 		if (card.Sign == this.Sign) return true;
 
@@ -30,8 +30,8 @@ export default class Card {
 			let colors = ["blue", "green", "red", "yellow"];
 			for (let color = 0; color < colors.length; color++) {
 
-				stock.push(new Card("special", "color"));
-				stock.push(new Card("special", "4", 4));
+				stock.push(new Card("wild", "color"));
+				stock.push(new Card("wild", "draw4", 4));
 
 				stock.push(new Card(colors[color], "0"));
 
@@ -52,5 +52,9 @@ export default class Card {
 		}
 
 		return stock;
+	}
+
+	public Equals(card: Card) {
+		return this.Color == card.Color && this.Sign == card.Sign && this.Penalty == card.Penalty;
 	}
 }
