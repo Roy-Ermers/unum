@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Room_1 = __importDefault(require("./Room"));
+const logger_1 = __importDefault(require("../logger"));
 class RoomManager {
     static get Rooms() {
         return this.rooms;
@@ -12,7 +13,6 @@ class RoomManager {
         this.Server = IO;
         this.Socket = IO.of("/rooms");
         this.Socket.on("connection", socket => {
-            console.log(`Got connection from ${socket.id}`);
             socket.on("GetRooms", callback => {
                 let result = this.Rooms
                     .filter(x => !x.Secret)
@@ -20,7 +20,6 @@ class RoomManager {
                 callback(result);
             });
             socket.on("CreateRoom", (room, callback) => {
-                console.log("CreateRoom");
                 if (typeof room == 'object') {
                     if (room.Name == "") {
                         callback({ error: 412, message: "Name is not correctly filled in." });
@@ -57,7 +56,7 @@ class RoomManager {
         let room = new Room_1.default(Name, password, secret, maxPlayers);
         room.startupSocket(this.Server.of("/" + room.SocketID));
         room.on("update", () => this.SendUpdate());
-        console.log(`Created new room ${room.ID} ${room.Name} for ${room.HostID}`);
+        logger_1.default.Log(`[Lobby] Created new room ${room.ID} ${room.Name} for ${room.HostID}`);
         this.rooms.unshift(room);
         if (!room.Secret) {
             room.on("update", () => this.SendUpdate());
@@ -66,7 +65,7 @@ class RoomManager {
         return room;
     }
     static SendUpdate() {
-        console.log("[lobby] sending update");
+        logger_1.default.Log("[lobby] sending update");
         this.Socket.emit("update", this.Rooms
             .filter(x => !x.Secret)
             .map(x => x.toPublicObject()));
@@ -75,7 +74,7 @@ class RoomManager {
         this.Rooms.filter(x => x.ConnectedPlayers == 0).forEach(x => this.RemoveRoom(x.ID));
     }
     static RemoveRoom(ID) {
-        console.log(`Removed room ${ID}`);
+        logger_1.default.Log(`[lobby] Removed room ${ID}`);
         this.Socket.emit("RemovedRoom", ID);
         this.rooms = this.rooms.filter(x => x.ID != ID);
     }

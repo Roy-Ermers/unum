@@ -7,6 +7,7 @@ const utils_1 = require("../utils");
 const events_1 = require("events");
 const player_1 = __importDefault(require("./player"));
 const card_1 = __importDefault(require("./card"));
+const logger_1 = __importDefault(require("../logger"));
 var RoomState;
 (function (RoomState) {
     RoomState[RoomState["WaitingForPlayers"] = 0] = "WaitingForPlayers";
@@ -253,10 +254,11 @@ class Room extends events_1.EventEmitter {
     }
     //#debug
     Log(...message) {
-        console.log(`[${this.ID} - "${this.Name}"] ${message}`);
+        logger_1.default.Log;
+        logger_1.default.Log(`[${this.ID} - "${this.Name}"] ${message}`);
     }
     Warn(...message) {
-        console.warn(`[${this.ID} - "${this.Name}"] ${message}`);
+        logger_1.default.Warn(`[${this.ID} - "${this.Name}"] ${message}`);
     }
 }
 exports.default = Room;

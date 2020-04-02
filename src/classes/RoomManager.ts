@@ -1,4 +1,5 @@
 import Room from "./Room";
+import Logger from "../logger";
 export class RoomManager {
 	private static rooms: Room[] = [];
 	private static Socket: SocketIO.Namespace;
@@ -11,7 +12,6 @@ export class RoomManager {
 		this.Socket = IO.of("/rooms");
 
 		this.Socket.on("connection", socket => {
-			console.log(`Got connection from ${socket.id}`);
 			socket.on("GetRooms", callback => {
 				let result =
 					this.Rooms
@@ -21,7 +21,6 @@ export class RoomManager {
 			});
 
 			socket.on("CreateRoom", (room, callback) => {
-				console.log("CreateRoom");
 				if (typeof room == 'object') {
 
 					if (room.Name == "") {
@@ -62,7 +61,7 @@ export class RoomManager {
 
 		room.startupSocket(this.Server.of("/" + room.SocketID));
 		room.on("update", () => this.SendUpdate());
-		console.log(`Created new room ${room.ID} ${room.Name} for ${room.HostID}`);
+		Logger.Log(`[Lobby] Created new room ${room.ID} ${room.Name} for ${room.HostID}`);
 		this.rooms.unshift(room);
 		if (!room.Secret) {
 			room.on("update", () => this.SendUpdate());
@@ -72,20 +71,20 @@ export class RoomManager {
 	}
 
 	public static SendUpdate() {
-		console.log("[lobby] sending update");
+		Logger.Log("[lobby] sending update");
 		this.Socket.emit("update",
 			this.Rooms
 				.filter(x => !x.Secret)
 				.map(x => x.toPublicObject()
 				));
 	}
-	
+
 	public static Clean() {
 		this.Rooms.filter(x => x.ConnectedPlayers == 0).forEach(x => this.RemoveRoom(x.ID));
 	}
 
 	public static RemoveRoom(ID: string) {
-		console.log(`Removed room ${ID}`);
+		Logger.Log(`[lobby] Removed room ${ID}`);
 		this.Socket.emit("RemovedRoom", ID);
 		this.rooms = this.rooms.filter(x => x.ID != ID);
 	}

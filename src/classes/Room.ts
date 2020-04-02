@@ -2,6 +2,7 @@ import { GenerateID } from "../utils";
 import { EventEmitter } from "events";
 import Player from "./player";
 import Card from "./card";
+import Logger from "../logger";
 export enum RoomState { WaitingForPlayers, Started, Done };
 export enum GameDirection { ClockWise, CounterClockWise };
 export default class Room extends EventEmitter {
@@ -284,11 +285,12 @@ export default class Room extends EventEmitter {
 
 	//#debug
 	public Log(...message: any[]) {
-		console.log(`[${this.ID} - "${this.Name}"] ${message}`);
+		Logger.Log
+		Logger.Log(`[${this.ID} - "${this.Name}"] ${message}`);
 	}
 
 	public Warn(...message: any[]) {
-		console.warn(`[${this.ID} - "${this.Name}"] ${message}`);
+		Logger.Warn(`[${this.ID} - "${this.Name}"] ${message}`);
 	}
 
 	//#enddebug
