@@ -13,7 +13,7 @@
 		height: 10vmax;
 		top: calc(50vh - 5vmax);
 		left: calc(50vw - 5vmax);
-		background: url("/images/logo.png");
+		background: url("/images/logo.svg");
 		background-size: 100%;
 		background-repeat: no-repeat;
 	}
@@ -91,6 +91,7 @@ body::after {
 .lobby {
 	width: 75vw;
 	margin: 0 auto;
+	padding-top: 2rem;
 
 	@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
 		width: 100vw;

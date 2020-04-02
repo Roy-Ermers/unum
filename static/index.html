@@ -4,11 +4,25 @@
 <head>
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Uno</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="A fun cardgame to play with friends.">
+	<meta name="og:description" content="A fun cardgame to play with friends.">
+	<meta name="keywords" content="uno, card, game, friends, unum, roy ermers, online, multiplayer">
+	<meta name="author" content="Roy Ermers">
+	<meta name="designer" content="Roy Ermers">
+	<meta name='language' content='en-US'>
+	<meta name='robots' content='index,follow'>
+	<meta name="og:title" content="Unum">
+	<meta name="og:type" content="website">
+	<meta property="og:image" content="images/icons/logo.svg" />
+	<meta property="og:image" content="images/icons/logo.png" />
+
+	<title>Unum</title>
+
 	<link href="https://fonts.googleapis.com/css?family=Roboto+Slab|Spartan&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="css/lobby.css">
-	<link rel="shortcut icon" href="images/small_icon.png" type="image/x-icon">
+	<link rel="shortcut icon" href="images/icons/icon-72x72.png" type="image/x-icon">
+	<link rel="manifest" href="manifest.json">
 	<script src="/socket.io/socket.io.js"></script>
 	<script defer src="scripts/lobby.js"></script>
 </head>
@@ -16,8 +30,8 @@
 <body class="loading">
 	<main>
 		<div class="username-form">
-			<img src="images/logo.png" alt="" class="logo">
-			<h1>Login to Uno.</h1>
+			<img src="images/logo.svg" alt="" class="logo">
+			<h1>Login to Unum.</h1>
 			<form class="login-form">
 				<label for="Name">What's your name?</label>
 				<input placeholder="What is your name?" type="text" name="Name" id="Name" autocomplete="off">
@@ -27,7 +41,7 @@
 
 		</div>
 		<div class="lobby">
-			<img src="images/logo.png" alt="" class="logo">
+			<img src="images/logo.svg" alt="" class="logo">
 			<a class="change-name">&triangleleft; change name...</a>
 			<div>
 				<h1>Room browser</h1>

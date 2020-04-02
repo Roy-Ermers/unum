@@ -8,6 +8,14 @@
  * @property {number} MaxPlayers
  * @property {number} State
  */
+
+//#region Service worker 
+
+navigator.serviceWorker.register('service-worker.js', {
+	scope: '/'
+});
+
+////#endregion
 //#region HTML
 const State = ["Waiting for players...", "Playing", "Done"];
 const RoomBrowser = document.querySelector(".room-browser");
