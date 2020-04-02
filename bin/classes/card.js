@@ -2,22 +2,26 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 let stock = [];
 class Card {
-    constructor(color, sign, penalty) {
+    constructor(color, sign, penalty, chosenColor) {
         if (typeof color == "object") {
             this.Color = color.Color;
             this.Sign = color.Sign;
             this.Penalty = color.Penalty;
+            this.ChosenColor = color.ChosenColor;
         }
         else if (sign) {
             this.Color = color;
             this.Sign = sign;
             this.Penalty = (penalty !== null && penalty !== void 0 ? penalty : 0);
+            this.ChosenColor = chosenColor;
         }
         else
             throw new TypeError("Missing sign.");
     }
     CanMatch(card) {
         if (this.Color == "wild")
+            return true;
+        if (card.ChosenColor != undefined && this.Color == card.ChosenColor)
             return true;
         if (card.Color == this.Color)
             return true;

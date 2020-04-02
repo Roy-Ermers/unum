@@ -78,6 +78,7 @@ class Player {
     TakeCard() {
         if (this._cards.some(card => card.CanMatch(this._room.RecentCard))) {
             this._room.Warn("Player " + this.Name + " has matching cards, but tried to draw anyway.");
+            this._socket.emit("InvalidDraw");
             return;
         }
         let card = this._room.pickCard();

@@ -3,22 +3,27 @@ export default class Card {
 	public Color: string;
 	public Sign: string;
 	public Penalty: number;
-	constructor(color: string | { Color: string, Sign: string, Penalty: number }, sign?: string, penalty?: number) {
+	public ChosenColor?: string;
+
+	constructor(color: string | { Color: string, Sign: string, Penalty: number, ChosenColor: string } | Card, sign?: string, penalty?: number, chosenColor?: string) {
 		if (typeof color == "object") {
 			this.Color = color.Color;
 			this.Sign = color.Sign;
 			this.Penalty = color.Penalty;
+			this.ChosenColor = color.ChosenColor;
 		}
 		else if (sign) {
 			this.Color = color;
 			this.Sign = sign;
 			this.Penalty = penalty ?? 0;
+			this.ChosenColor = chosenColor;
 		}
 		else throw new TypeError("Missing sign.");
 	}
 
 	public CanMatch(card: Card) {
 		if (this.Color == "wild") return true;
+		if (card.ChosenColor != undefined && this.Color == card.ChosenColor) return true;
 		if (card.Color == this.Color) return true;
 		if (card.Sign == this.Sign) return true;
 

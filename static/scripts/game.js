@@ -113,6 +113,8 @@ const startScreen = {
 		}
 	}
 };
+const colorSelect = document.querySelector(".color-select");
+
 //#endregion
 
 //#region constants
@@ -259,14 +261,21 @@ class Card {
 
 	get URL() {
 		if (this.Color == "wild") {
+			let url = "";
 			if (this.Sign == "draw4")
-				return `/images/wild_pick_four.png`;
+				url += `/images/wild_pick_four`;
 			else if (this.Sign == "color")
-				return `images/wild_color_changer.png`;
+				url += `images/wild_color_changer`;
 			else {
 				console.error(`wild ${this.Sign} hasn't been implemented yet.`);
 				return `images/card_back.png`;
 			}
+
+			if (this.ChosenColor) {
+				url += "_" + this.ChosenColor;
+			}
+
+			return url + ".png";
 		}
 		return `images/${this.Color}_${this.Sign}.png`;
 	}
@@ -274,20 +283,24 @@ class Card {
 		return `${this.Color} ${this.Sign}`;
 	}
 	/**
-	 * @param {{ Color: string; Sign: string; Penalty: number }|string} color
+	 * @param {{ Color: string; Sign: string; Penalty: number, ChosenColor: string }|string} color
 	 * @param {string} [sign]
 	 * @param {number} [penalty]
+	 * @param {string} [chosenColor]
 	 */
-	constructor(color, sign, penalty) {
+	constructor(color, sign, penalty, chosenColor) {
 		if (typeof color == "object") {
 			this.Color = color.Color;
 			this.Sign = color.Sign;
 			this.Penalty = color.Penalty;
+			this.ChosenColor = color.ChosenColor;
 		}
 		else {
 			this.Color = color;
 			this.Sign = sign;
 			this.Penalty = penalty || 0;
+			this.ChosenColor = chosenColor;
+
 		}
 	}
 
@@ -296,6 +309,7 @@ class Card {
 	 */
 	CanMatch(card) {
 		if (this.Color == "wild") return true;
+		if (card.ChosenColor != undefined && this.Color == card.ChosenColor) return true;
 		if (card.Color == this.Color) return true;
 		if (card.Sign == this.Sign) return true;
 
@@ -318,6 +332,28 @@ function ShowErrorMessage(message) {
 	document.body.appendChild(alert);
 }
 
+function selectColor() {
+	return new Promise((resolve) => {
+		colorSelect.classList.add("show");
+		let blue = colorSelect.querySelector(".blue");
+		let red = colorSelect.querySelector(".red");
+		let yellow = colorSelect.querySelector(".yellow");
+		let green = colorSelect.querySelector(".green");
+
+		function chooseColor(color) {
+			blue.removeEventListener("click", chooseColor);
+			red.removeEventListener("click", chooseColor);
+			yellow.removeEventListener("click", chooseColor);
+			green.removeEventListener("click", chooseColor);
+			colorSelect.classList.remove("show");
+			resolve(color);
+		}
+		blue.addEventListener("click", () => chooseColor("blue"));
+		red.addEventListener("click", () => chooseColor("red"));
+		yellow.addEventListener("click", () => chooseColor("yellow"));
+		green.addEventListener("click", () => chooseColor("green"));
+	})
+}
 
 /**
  * @param {Card} card
@@ -436,10 +472,14 @@ pile.addEventListener("dragover", ev => {
 	else ev.dataTransfer.dropEffect = "none";
 });
 
-pile.addEventListener("drop", ev => {
+pile.addEventListener("drop", async ev => {
 	ev.preventDefault();
 	if (ev.dataTransfer.types.includes("uno-card")) {
 		let card = new Card(JSON.parse(ev.dataTransfer.getData("uno-card")));
+		if (card.Color == "wild") {
+			let choice = await selectColor();
+			card.ChosenColor = choice;
+		}
 		/**
 		 * @param {any} allow
 		 */
@@ -448,6 +488,7 @@ pile.addEventListener("drop", ev => {
 				ThrowCard(card, ev.clientX, ev.clientY);
 			}
 			else {
+				card.ChosenColor = undefined;
 				AddCard(card, "pile");
 				ShowErrorMessage("This card can't be thrown on this card.");
 			}

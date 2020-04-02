@@ -543,4 +543,59 @@ body > .players > p :last-child:not(img) {
   margin-left: 1.5rem;
 }
 
+.color-select {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr var(--size, 15vmax) var(--size, 15vmax) 1fr;
+  grid-template-rows: 1fr var(--size, 15vmax) var(--size, 15vmax) 1fr;
+  transition: transform 200ms ease-out;
+  transform: scale(0);
+}
+.color-select.show {
+  transform: scale(1);
+  transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition-duration: 500ms;
+}
+.color-select button {
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #333333;
+  transition: transform 250ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  overflow: hidden;
+}
+.color-select button:hover {
+  transform: scale(1.1);
+}
+.color-select .blue {
+  background-color: #00c3e5;
+  border-top-left-radius: 100%;
+  transform-origin: bottom right;
+  grid-area: 2/2;
+}
+.color-select .red {
+  background-color: #f56462;
+  transform-origin: bottom left;
+  border-top-right-radius: 100%;
+  grid-area: 2/3;
+}
+.color-select .yellow {
+  background-color: #f7e359;
+  transform-origin: top right;
+  border-bottom-left-radius: 100%;
+  grid-area: 3/2;
+}
+.color-select .green {
+  background-color: #2fe29b;
+  transform-origin: top left;
+  border-bottom-right-radius: 100%;
+  grid-area: 3/3;
+}
+
 /*# sourceMappingURL=room.css.map */
