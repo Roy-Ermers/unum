@@ -174,11 +174,6 @@ export default class Room extends EventEmitter {
 		}
 	}
 
-	private pickRandomPlayer() {
-		let sockets = [...this.Players.keys()];
-		return sockets[Math.floor(Math.random() * sockets.length)];
-	}
-
 	public pickCard(): Card {
 		if (this.Stack.length == 0) {
 			this.Stack = this.Pile.slice(0, this.Pile.length - 1);
@@ -205,6 +200,10 @@ export default class Room extends EventEmitter {
 		});
 
 		let startCard = this.Stack.pop();
+		while (startCard?.Color == "wild") {
+			this.Stack.push(startCard);
+			startCard = this.Stack.pop();
+		}
 		if (startCard)
 			this.AddToPile(startCard);
 

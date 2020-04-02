@@ -8,7 +8,7 @@ let socket;
 const hand = document.querySelector(".hand");
 /** @type {HTMLDivElement} */
 const pile = document.querySelector(".pile");
-const playerList = document.querySelector(".players");
+const playerList = document.querySelector("body>.players");
 const stack = document.querySelector(".stack");
 const startScreen = {
 	element: document.querySelector(".start-page"),
@@ -245,6 +245,13 @@ function JoinGame() {
 		[...hand.children].forEach(x => x.classList.remove("impossible"));
 		Player.turn = false;
 	});
+
+	socket.on("InvalidDraw", () => {
+		if (stack.classList.contains("invalid")) return;
+		stack.classList.add("invalid");
+
+		setTimeout(() => stack.classList.remove("invalid"), 500);
+	})
 }
 
 
@@ -506,23 +513,23 @@ window.addEventListener('wheel', function (e) {
 	else hand.scrollBy({ behavior: "auto", left: -100 });
 });
 
-let PlayerListShown = false;
 /**
  * Shows the playerlist
  */
-function ShowPlayerList() {
+function loadPlayerList() {
 	playerList.innerHTML = `<h1>${RoomInfo.Name} (${RoomInfo.Players}/${RoomInfo.MaxPlayers})</h1>`;
 	/**
 	 * @param {any[]} playerlist
 	 */
 	socket.emit("ListPlayers", playerlist => {
+		console.log(playerlist)
 		/**
 		 * @param {{ Name: string; Cards: string | number; }} player
 		 */
 		playerlist.forEach(player => {
 			let elem = document.createElement("p");
 			elem.textContent = player.Name;
-			if (player.Cards < 20)
+			if (player.Cards < 10)
 				for (let i = 0; i < player.Cards; i++) {
 					let img = document.createElement("img");
 					img.src = "images/card_back.png";
@@ -541,26 +548,11 @@ function ShowPlayerList() {
 		});
 
 	});
-	playerList.classList.add("show");
-}
-function HidePlayerList() {
-	playerList.classList.remove("show");
 }
 
-document.addEventListener("keydown", ev => {
-	ev.preventDefault();
-	if (ev.key == "Tab" && !PlayerListShown) {
-		PlayerListShown = true;
-		ShowPlayerList();
-	}
-});
-document.addEventListener("keyup", ev => {
-	ev.preventDefault();
-	if (ev.key == "Tab") {
-		PlayerListShown = false;
-		HidePlayerList();
-	}
-});
+playerList.addEventListener("mouseenter", () => {
+	loadPlayerList();
+})
 //#endregion
 
 JoinGame();

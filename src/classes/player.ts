@@ -92,7 +92,6 @@ export default class Player {
 
 			else if (card.Sign == "reverse")
 				this._room.ChangeDirection();
-
 			this._room.NextTurn(card.Penalty);
 		}
 		else

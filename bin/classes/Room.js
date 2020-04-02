@@ -153,10 +153,6 @@ class Room extends events_1.EventEmitter {
             [this.Stack[i], this.Stack[j]] = [this.Stack[j], this.Stack[i]];
         }
     }
-    pickRandomPlayer() {
-        let sockets = [...this.Players.keys()];
-        return sockets[Math.floor(Math.random() * sockets.length)];
-    }
     pickCard() {
         if (this.Stack.length == 0) {
             this.Stack = this.Pile.slice(0, this.Pile.length - 1);
@@ -170,7 +166,7 @@ class Room extends events_1.EventEmitter {
      * starts up the game
      */
     StartGame() {
-        var _a;
+        var _a, _b;
         this.Log(`Game started`);
         this.State = RoomState.Started;
         this.emit("update");
@@ -181,10 +177,14 @@ class Room extends events_1.EventEmitter {
             player.AddCard("stock", ...Cards);
         });
         let startCard = this.Stack.pop();
+        while (((_a = startCard) === null || _a === void 0 ? void 0 : _a.Color) == "wild") {
+            this.Stack.push(startCard);
+            startCard = this.Stack.pop();
+        }
         if (startCard)
             this.AddToPile(startCard);
         this.currentTurn = 0;
-        (_a = this.CurrentPlayer) === null || _a === void 0 ? void 0 : _a.TakeTurn();
+        (_b = this.CurrentPlayer) === null || _b === void 0 ? void 0 : _b.TakeTurn();
     }
     ChangeDirection() {
         var _a;
