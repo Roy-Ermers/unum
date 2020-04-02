@@ -1,5 +1,5 @@
 export default class Logger {
-	static log: string[];
+	static log: string[] = [];
 
 	public static Log(...message: any[]) {
 		this.log.push("INFO " + message.toString());
