@@ -15,6 +15,8 @@ const startScreen = {
 	playerList: document.querySelector(".start-page>.players"),
 	_show: true,
 	settings: document.querySelector(".start-page>.settings"),
+	winner: document.querySelector(".start-page>h1"),
+	startButton: undefined,
 	/**
 	 * @type {boolean}
 	 */
@@ -77,10 +79,10 @@ const startScreen = {
 	set host(val) {
 
 		if (val) {
-			let startButton = document.createElement('button');
-			startButton.classList.add('start');
-			startButton.textContent = "start";
-			startButton.addEventListener("click", () => {
+			this.startButton = document.createElement('button');
+			this.startButton.classList.add('start');
+			this.startButton.textContent = "start";
+			this.startButton.addEventListener("click", () => {
 				/**
 				 * @param {{ error: any; message: any; }} res
 				 */
@@ -92,7 +94,7 @@ const startScreen = {
 
 				});
 			});
-			this.settings.appendChild(startButton);
+			this.settings.appendChild(this.startButton);
 
 			if (RoomInfo.Secret) {
 				console.log("Creating share link.");
@@ -114,7 +116,7 @@ const startScreen = {
 	}
 };
 const colorSelect = document.querySelector(".color-select");
-
+const callButton = document.querySelector(".call-uno");
 //#endregion
 
 //#region constants
@@ -251,9 +253,58 @@ function JoinGame() {
 		stack.classList.add("invalid");
 
 		setTimeout(() => stack.classList.remove("invalid"), 500);
-	})
-}
+	});
+	socket.on("CallUno", () => {
+		callButton.classList.add("show");
+		callButton.addEventListener("click", callUno);
+		console.log("Player needs to call unum");
+		callUnoTimer = setTimeout(() => {
+			callButton.classList.remove("show");
+			callButton.removeEventListener("click", callUno);
+			socket.emit("MissedUno");
+		}, 5000);
+	});
 
+	socket.on("CalledUno", player => {
+		ShowErrorMessage(`Watch out, ${player.Name} has called unum!`);
+	});
+
+	socket.on("EndGame", winner => {
+		startScreen.winner.textContent = `${winner.Name} is the winner!`;
+		startScreen.show = true;
+
+		Player.turn = false;
+		if (Player.Host) {
+			startScreen.startButton.textContent = "restart";
+		}
+
+		[...hand.children].forEach(x => {
+			//@ts-ignore
+			if (x.RemoveCard) x.RemoveCard();
+		});
+		pile.animate([
+			{ opacity: 1 },
+			{
+				opacity: 0
+			}
+		],
+			{
+				duration: 500,
+			}).addEventListener("finish", () => {
+				pile.innerHTML = "";
+				pile.style.opacity = "1";
+			})
+	});
+
+}
+let callUnoTimer;
+function callUno() {
+	if (callUnoTimer)
+		clearTimeout(callUnoTimer);
+
+	callButton.classList.remove("show");
+	socket.emit("CalledUno");
+}
 
 
 window.addEventListener("beforeunload", () => {
@@ -422,6 +473,7 @@ function AddCard(card, source) {
 				duration: 200
 			}).addEventListener("finish", () => img.remove());
 	}
+	img.RemoveCard = RemoveCard;
 }
 
 function FilterCards() {

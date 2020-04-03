@@ -6,7 +6,6 @@ import Logger from "../logger";
 export enum RoomState { WaitingForPlayers, Started, Done };
 export enum GameDirection { ClockWise, CounterClockWise };
 export default class Room extends EventEmitter {
-
 	public get ID(): string {
 		return this._ID;
 	}
@@ -74,8 +73,6 @@ export default class Room extends EventEmitter {
 		this.Password = password;
 		this.Secret = secret;
 		this.MaxPlayers = maxPlayers ?? 4;
-
-		this.Stack = Card.PlayCards();
 	}
 
 	public startupSocket(io: SocketIO.Namespace) {
@@ -114,6 +111,15 @@ export default class Room extends EventEmitter {
 					this.emit("update");
 			})
 		});
+	}
+
+	EndGame(winner: Player) {
+		this.socket?.emit('EndGame', winner);
+		this.Log(`Game ended, player ${winner.Name} has won!`);
+
+		this._state = RoomState.Done;
+
+		this.emit("update");
 	}
 
 	/**
@@ -192,9 +198,13 @@ export default class Room extends EventEmitter {
 		this.State = RoomState.Started;
 		this.emit("update");
 
+		this.Stack = Card.PlayCards();
+		this.Pile = [];
+
 		this.shuffleCards();
 
 		this.Players.forEach(player => {
+			player.ClearCards();
 			let Cards = this.Stack.slice(0, 7);
 			this.Stack = this.Stack.slice(7);
 			player.AddCard("stock", ...Cards);

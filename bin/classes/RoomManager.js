@@ -56,7 +56,7 @@ class RoomManager {
         let room = new Room_1.default(Name, password, secret, maxPlayers);
         room.startupSocket(this.Server.of("/" + room.SocketID));
         room.on("update", () => this.SendUpdate());
-        logger_1.default.Log(`[Lobby] Created new room ${room.ID} ${room.Name} for ${room.HostID}`);
+        logger_1.default.Log(`[Lobby] Created new room ${room.ID} ${room.Name}`);
         this.rooms.unshift(room);
         if (!room.Secret) {
             room.on("update", () => this.SendUpdate());

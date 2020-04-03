@@ -9,7 +9,7 @@ const socket_io_1 = __importDefault(require("socket.io"));
 const RoomManager_1 = require("./classes/RoomManager");
 const logger_1 = __importDefault(require("./logger"));
 const App = express_1.default();
-App.get("/logs", (req, res) => res.send(logger_1.default.log));
+App.get("/logs", (req, res) => res.contentType("html").send(logger_1.default.Html));
 App.use(express_1.default.static("static", { extensions: ["html", "htm"] }));
 App.use("*", (req, res) => {
     res.status(404).send("Not found");

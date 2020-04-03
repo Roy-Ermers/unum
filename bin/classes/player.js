@@ -28,6 +28,9 @@ class Player {
     get Name() {
         return this._name;
     }
+    ClearCards() {
+        this._cards = [];
+    }
     AddCard(source, ...Card) {
         this._cards.push(...Card);
         this._socket.emit("AddedCard", { Card, source });
@@ -52,6 +55,14 @@ class Player {
         this._socket.on("ThrowCard", (_card, callback) => {
             this.ThrowCard(_card, callback);
         });
+        this._socket.on("CalledUno", () => {
+            this._room.Log(`${this.Name} called unum.`);
+            this._socket.broadcast.emit("CalledUno", this.toPublicObject());
+        });
+        this._socket.on("MissedUno", () => {
+            this._room.Log(`${this.Name} missed unum.`);
+            this.AddCard("stock", this._room.pickCard());
+        });
     }
     ThrowCard(_card, callback) {
         let card = new card_1.default(_card);
@@ -65,7 +76,15 @@ class Player {
             this._room.AddToPile(card);
             this.RemoveCard(card);
             callback(true);
+            if (this.CardCount == 1) {
+                this._room.Log(`${this.Name} has unum.`);
+                this._socket.emit("CallUno");
+            }
             this._socket.emit("EndTurn");
+            if (this.CardCount == 0) {
+                this._room.EndGame(this);
+                return;
+            }
             if (card.Sign == "skip")
                 this._room.SkipTurn();
             else if (card.Sign == "reverse")

@@ -15,9 +15,11 @@
   font-size: 1.5rem;
 }
 
-body {
+body,
+html {
   background-color: #333333;
   margin: 0;
+  overflow-x: hidden;
 }
 
 *[hidden] {
@@ -175,6 +177,7 @@ button,
   border-radius: 5rem;
   transition: background-color ease 250ms;
   outline: none;
+  box-sizing: border-box;
 }
 form button,
 form .button {
@@ -483,9 +486,9 @@ body::after {
 }
 @media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
   .lobby .add-room {
-    width: 100%;
+    width: 100vw;
     background-color: rgba(47, 49, 54, 0.85);
-    right: -100%;
+    right: -100vw;
   }
 }
 

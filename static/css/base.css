@@ -15,9 +15,11 @@
   font-size: 1.5rem;
 }
 
-body {
+body,
+html {
   background-color: #333333;
   margin: 0;
+  overflow-x: hidden;
 }
 
 *[hidden] {
@@ -175,6 +177,7 @@ button,
   border-radius: 5rem;
   transition: background-color ease 250ms;
   outline: none;
+  box-sizing: border-box;
 }
 form button,
 form .button {

@@ -40,7 +40,6 @@ class Room extends events_1.EventEmitter {
         this.Password = password;
         this.Secret = secret;
         this.MaxPlayers = (maxPlayers !== null && maxPlayers !== void 0 ? maxPlayers : 4);
-        this.Stack = card_1.default.PlayCards();
     }
     get ID() {
         return this._ID;
@@ -103,6 +102,13 @@ class Room extends events_1.EventEmitter {
                     this.emit("update");
             });
         });
+    }
+    EndGame(winner) {
+        var _a;
+        (_a = this.socket) === null || _a === void 0 ? void 0 : _a.emit('EndGame', winner);
+        this.Log(`Game ended, player ${winner.Name} has won!`);
+        this._state = RoomState.Done;
+        this.emit("update");
     }
     /**
      * Authenticate an player and store its name.
@@ -171,8 +177,11 @@ class Room extends events_1.EventEmitter {
         this.Log(`Game started`);
         this.State = RoomState.Started;
         this.emit("update");
+        this.Stack = card_1.default.PlayCards();
+        this.Pile = [];
         this.shuffleCards();
         this.Players.forEach(player => {
+            player.ClearCards();
             let Cards = this.Stack.slice(0, 7);
             this.Stack = this.Stack.slice(7);
             player.AddCard("stock", ...Cards);
