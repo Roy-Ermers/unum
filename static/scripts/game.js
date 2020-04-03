@@ -428,8 +428,17 @@ function AddCard(card, source) {
 	img.card = card;
 	if (isTouch)
 		img.addEventListener("click", () => {
-			ThrowCard(card, window.innerWidth / 2, window.innerHeight / 2);
-			RemoveCard();
+			socket.emit("ThrowCard", card, allow => {
+				if (allow) {
+					ThrowCard(card);
+				}
+				else {
+					card.ChosenColor = undefined;
+					AddCard(card, "pile");
+					ShowErrorMessage("This card can't be thrown on this card.");
+				}
+			});
+
 		});
 
 	img.addEventListener("dragstart", ev => {
