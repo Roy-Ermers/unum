@@ -435,6 +435,7 @@ function AddCard(card, source) {
 			socket.emit("ThrowCard", card, allow => {
 				if (allow) {
 					ThrowCard(card);
+					RemoveCard();
 				}
 				else {
 					card.ChosenColor = undefined;
