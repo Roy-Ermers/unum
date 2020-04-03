@@ -427,7 +427,11 @@ function AddCard(card, source) {
 	img.dataset.card = card.name;
 	img.card = card;
 	if (isTouch)
-		img.addEventListener("click", () => {
+		img.addEventListener("click", async () => {
+			if (card.Color == "wild") {
+				let choice = await selectColor();
+				card.ChosenColor = choice;
+			}
 			socket.emit("ThrowCard", card, allow => {
 				if (allow) {
 					ThrowCard(card);
