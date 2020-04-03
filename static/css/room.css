@@ -423,8 +423,10 @@ input:checked ~ .toggle {
 .hand.disabled .card:not(:hover) {
   filter: brightness(75%);
 }
-.hand:not(.disabled):hover .card:not(:hover) {
-  filter: brightness(75%);
+@media (cursor: fine) {
+  .hand:not(.disabled):hover .card:not(:hover) {
+    filter: brightness(75%);
+  }
 }
 .hand .card {
   display: inline-block;

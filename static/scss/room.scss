@@ -182,8 +182,10 @@
 		}
 	}
 
-	&:not(.disabled):hover .card:not(:hover) {
-		filter: brightness(75%);
+	@media (cursor: fine) {
+		&:not(.disabled):hover .card:not(:hover) {
+			filter: brightness(75%);
+		}
 	}
 
 	.card {

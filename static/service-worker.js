@@ -1,5 +1,5 @@
 //@ts-nocheck
-const CACHE = 'v1.0.0.3';
+const CACHE = 'v1.0.0.4';
 
 self.addEventListener('install', function (evt) {
 	console.log('The service worker is being installed.');
@@ -14,6 +14,12 @@ self.addEventListener('fetch', function (evt) {
 	);
 });
 function precache() {
+	self.caches.keys().then(keys => {
+		keys.forEach(key => {
+			if (key != CACHE) caches.delete(key);
+		})
+	});
+
 	return caches.open(CACHE).then(function (cacheFiles) {
 		return cacheFiles.addAll([
 			'./index.html',
