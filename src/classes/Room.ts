@@ -114,7 +114,7 @@ export default class Room extends EventEmitter {
 	}
 
 	EndGame(winner: Player) {
-		this.socket?.emit('EndGame', winner);
+		this.socket?.emit('EndGame', winner.toPublicObject());
 		this.Log(`Game ended, player ${winner.Name} has won!`);
 
 		this._state = RoomState.Done;
@@ -183,8 +183,9 @@ export default class Room extends EventEmitter {
 
 	public pickCard(): Card {
 		if (this.Stack.length == 0) {
-			this.Stack = this.Pile.slice(0, this.Pile.length - 1);
-			this.Pile = this.Pile.slice(0, this.Pile.length - 1);
+			this.Stack = Card.PlayCards();
+			this.Pile = [this.RecentCard];
+			this.socket?.emit("ClearStock");
 			this.shuffleCards();
 		}
 		//@ts-ignore

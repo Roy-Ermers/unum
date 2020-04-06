@@ -105,7 +105,7 @@ class Room extends events_1.EventEmitter {
     }
     EndGame(winner) {
         var _a;
-        (_a = this.socket) === null || _a === void 0 ? void 0 : _a.emit('EndGame', winner);
+        (_a = this.socket) === null || _a === void 0 ? void 0 : _a.emit('EndGame', winner.toPublicObject());
         this.Log(`Game ended, player ${winner.Name} has won!`);
         this._state = RoomState.Done;
         this.emit("update");
@@ -161,9 +161,11 @@ class Room extends events_1.EventEmitter {
         }
     }
     pickCard() {
+        var _a;
         if (this.Stack.length == 0) {
-            this.Stack = this.Pile.slice(0, this.Pile.length - 1);
-            this.Pile = this.Pile.slice(0, this.Pile.length - 1);
+            this.Stack = card_1.default.PlayCards();
+            this.Pile = [this.RecentCard];
+            (_a = this.socket) === null || _a === void 0 ? void 0 : _a.emit("ClearStock");
             this.shuffleCards();
         }
         //@ts-ignore

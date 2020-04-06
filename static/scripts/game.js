@@ -174,7 +174,10 @@ function JoinGame() {
 	socket = io("/" + socketID, {
 		timeout: 2000
 	});
-
+	socket.use((packet, next) => {
+		console.log(packet[0]);
+		next();
+	})
 	socket.on("connect", () => {
 		console.log("Connection established.");
 		clearTimeout(timeout);
