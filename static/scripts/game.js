@@ -10,6 +10,7 @@ const hand = document.querySelector(".hand");
 const pile = document.querySelector(".pile");
 const playerList = document.querySelector("body>.players");
 const stack = document.querySelector(".stack");
+
 const startScreen = {
 	element: document.querySelector(".start-page"),
 	playerList: document.querySelector(".start-page>.players"),
@@ -167,12 +168,13 @@ function JoinGame() {
 	Player.Name = Name;
 
 	let timeout = setTimeout(() => {
+		if (socket.connected) return;
 		console.log("connection timeout");
 		location.href = "../?reason=no-response";
-	}, 2000);
+	}, 20000);
 	// @ts-ignore
 	socket = io("/" + socketID, {
-		timeout: 2000
+		timeout: 20000
 	});
 	socket.use((packet, next) => {
 		console.log(packet[0]);
