@@ -1,5 +1,5 @@
 # Unum
-![Logo](./static/images/Logo.svg)
+![Logo](./static/images/logo.svg)
 
 Unum is an clone of the classic game cardgame Uno. It follows the [official rules](https://service.mattel.com/instruction_sheets/42001pr.pdf) decided by mattel.
 
