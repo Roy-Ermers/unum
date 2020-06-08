@@ -39,9 +39,11 @@ export default class Player {
 		this._name = name;
 		this.setupEvents();
 	}
+
 	public ClearCards() {
 		this._cards = [];
 	}
+
 	public AddCard(source: string, ...Card: Card[]) {
 		this._cards.push(...Card);
 		this._socket.emit("AddedCard", { Card, source });
@@ -59,8 +61,7 @@ export default class Player {
 		return this._cards.some(card => card.Equals(match));
 	}
 
-	setupEvents() {
-		console.log(this._socket.connected);
+	private setupEvents() {
 		this._socket.on("GetCard", (callback: Function) => {
 			callback(this._cards);
 		});
@@ -118,7 +119,7 @@ export default class Player {
 			callback(false);
 	}
 
-	TakeCard() {
+	public TakeCard() {
 		if (this._cards.some(card => card.CanMatch(this._room.RecentCard))) {
 			this._room.Warn("Player " + this.Name + " has matching cards, but tried to draw anyway.");
 			this._socket.emit("InvalidDraw");
@@ -129,11 +130,11 @@ export default class Player {
 		this.AddCard("stock", card);
 	}
 
-	TakeTurn() {
+	public TakeTurn() {
 		this._socket.emit("Turn");
 	}
 
-	toPublicObject() {
+	public toPublicObject() {
 		return { ID: this.ID, Name: this.Name, Cards: this.CardCount, Host: this.Host }
 	}
 }

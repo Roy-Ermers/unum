@@ -4,9 +4,11 @@ export class RoomManager {
 	private static rooms: Room[] = [];
 	private static Socket: SocketIO.Namespace;
 	private static Server: SocketIO.Server;
+
 	public static get Rooms() {
 		return this.rooms;
 	}
+
 	static Initialize(IO: SocketIO.Server) {
 		this.Server = IO;
 		this.Socket = IO.of("/rooms");
@@ -56,6 +58,7 @@ export class RoomManager {
 			})
 		});
 	}
+	
 	public static CreateRoom(Name: string, password: string, secret: boolean, maxPlayers?: number) {
 		let room = new Room(Name, password, secret, maxPlayers);
 

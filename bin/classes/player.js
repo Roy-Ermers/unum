@@ -20,7 +20,7 @@ class Player {
     }
     get SocketID() {
         var _a, _b;
-        return _b = (_a = this._socket) === null || _a === void 0 ? void 0 : _a.id, (_b !== null && _b !== void 0 ? _b : "none");
+        return (_b = (_a = this._socket) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : "none";
     }
     get CardCount() {
         return this._cards.length;
@@ -45,7 +45,6 @@ class Player {
         return this._cards.some(card => card.Equals(match));
     }
     setupEvents() {
-        console.log(this._socket.connected);
         this._socket.on("GetCard", (callback) => {
             callback(this._cards);
         });

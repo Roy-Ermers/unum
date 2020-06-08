@@ -39,7 +39,7 @@ class Room extends events_1.EventEmitter {
         this.Name = name;
         this.Password = password;
         this.Secret = secret;
-        this.MaxPlayers = (maxPlayers !== null && maxPlayers !== void 0 ? maxPlayers : 4);
+        this.MaxPlayers = maxPlayers !== null && maxPlayers !== void 0 ? maxPlayers : 4;
     }
     get ID() {
         return this._ID;
@@ -91,10 +91,9 @@ class Room extends events_1.EventEmitter {
                     callback({ error: 403, message: "You are not the host." });
             });
             socket.on("disconnect", () => {
-                var _a, _b;
                 let player = this.Players.get(socket.id);
-                this.Log(((_a = player) === null || _a === void 0 ? void 0 : _a.Name) + " left");
-                socket.broadcast.emit("PlayerLeft", (_b = player) === null || _b === void 0 ? void 0 : _b.toPublicObject());
+                this.Log((player === null || player === void 0 ? void 0 : player.Name) + " left");
+                socket.broadcast.emit("PlayerLeft", player === null || player === void 0 ? void 0 : player.toPublicObject());
                 this.Players.delete(socket.id);
                 if (this.Players.size == 0)
                     this.emit("delete");
@@ -115,7 +114,7 @@ class Room extends events_1.EventEmitter {
      * @param socket the socket that needs to be authenticated.
      */
     AuthenticatePlayer({ Name, HostKey }, socket) {
-        var _a, _b;
+        var _a;
         if (this.Players.has(socket.id)) {
             socket.emit("Authenticated", { Host: (_a = this.Players.get(socket.id)) === null || _a === void 0 ? void 0 : _a.Host, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
             return;
@@ -127,7 +126,7 @@ class Room extends events_1.EventEmitter {
         if (this.State != RoomState.WaitingForPlayers) {
             socket.emit("Disconnect", { error: 409, reason: "Game is already started." });
         }
-        if (((_b = Name) === null || _b === void 0 ? void 0 : _b.length) >= 3) {
+        if ((Name === null || Name === void 0 ? void 0 : Name.length) >= 3) {
             let newPlayer = new player_1.default(socket, Name, this);
             if (HostKey == this.HostKey && !this.HostID) {
                 this.Log(`${Name} is the host.`);
@@ -175,7 +174,7 @@ class Room extends events_1.EventEmitter {
      * starts up the game
      */
     StartGame() {
-        var _a, _b;
+        var _a;
         this.Log(`Game started`);
         this.State = RoomState.Started;
         this.emit("update");
@@ -189,14 +188,14 @@ class Room extends events_1.EventEmitter {
             player.AddCard("stock", ...Cards);
         });
         let startCard = this.Stack.pop();
-        while (((_a = startCard) === null || _a === void 0 ? void 0 : _a.Color) == "wild") {
+        while ((startCard === null || startCard === void 0 ? void 0 : startCard.Color) == "wild") {
             this.Stack.push(startCard);
             startCard = this.Stack.pop();
         }
         if (startCard)
             this.AddToPile(startCard);
         this.currentTurn = 0;
-        (_b = this.CurrentPlayer) === null || _b === void 0 ? void 0 : _b.TakeTurn();
+        (_a = this.CurrentPlayer) === null || _a === void 0 ? void 0 : _a.TakeTurn();
     }
     ChangeDirection() {
         var _a;

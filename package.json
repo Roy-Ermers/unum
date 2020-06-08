@@ -4,9 +4,8 @@
   "description": "",
   "main": "bin/app.js",
   "scripts": {
-    "watch": "tsc -w",
-    "start": "node .",
-    "start-watch": "nodemon"
+    "build": "tsc",
+    "start": "node ."
   },
   "author": "Roy Ermers",
   "license": "ISC",

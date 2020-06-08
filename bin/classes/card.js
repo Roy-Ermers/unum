@@ -12,7 +12,7 @@ class Card {
         else if (sign) {
             this.Color = color;
             this.Sign = sign;
-            this.Penalty = (penalty !== null && penalty !== void 0 ? penalty : 0);
+            this.Penalty = penalty !== null && penalty !== void 0 ? penalty : 0;
             this.ChosenColor = chosenColor;
         }
         else

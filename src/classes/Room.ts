@@ -113,7 +113,7 @@ export default class Room extends EventEmitter {
 		});
 	}
 
-	EndGame(winner: Player) {
+	public EndGame(winner: Player) {
 		this.socket?.emit('EndGame', winner.toPublicObject());
 		this.Log(`Game ended, player ${winner.Name} has won!`);
 
@@ -126,7 +126,7 @@ export default class Room extends EventEmitter {
 	 * Authenticate an player and store its name.
 	 * @param socket the socket that needs to be authenticated.
 	 */
-	AuthenticatePlayer({ Name, HostKey }: { Name: string, HostKey: string }, socket: SocketIO.Socket) {
+	public AuthenticatePlayer({ Name, HostKey }: { Name: string, HostKey: string }, socket: SocketIO.Socket) {
 		if (this.Players.has(socket.id)) {
 			socket.emit("Authenticated", { Host: this.Players.get(socket.id)?.Host, Room: this.toPublicObject(), Players: [...this.Players.values()].map(x => x.toPublicObject()) });
 			return;
@@ -281,7 +281,7 @@ export default class Room extends EventEmitter {
 	/**
 	 * Generates an object without the password.
 	 */
-	toPublicObject() {
+	public toPublicObject() {
 		return {
 			ID: this._ID,
 			Name: this.Name,

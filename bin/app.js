@@ -14,6 +14,6 @@ App.use(express_1.default.static("static", { extensions: ["html", "htm"] }));
 App.use("*", (req, res) => {
     res.status(404).send("Not found");
 });
-console.log(`Uno listening on ${_a = process.env.PORT, (_a !== null && _a !== void 0 ? _a : 8080)}`);
-const IO = socket_io_1.default(App.listen((_b = process.env.PORT, (_b !== null && _b !== void 0 ? _b : 8080))));
+console.log(`Uno listening on ${(_a = process.env.PORT) !== null && _a !== void 0 ? _a : 8080}`);
+const IO = socket_io_1.default(App.listen((_b = process.env.PORT) !== null && _b !== void 0 ? _b : 8080));
 RoomManager_1.RoomManager.Initialize(IO);
