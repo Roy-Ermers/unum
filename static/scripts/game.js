@@ -227,10 +227,14 @@ function JoinGame() {
 		cards.Card.forEach((card, i) => {
 			setTimeout(() => {
 				timings.push(AddCard(new Card(card), cards.source));
-			}, i * 30)
+			}, i * 60)
 		});
 	});
-
+	socket.on("ClearStock", () => {
+		pile.querySelectorAll(".card:not(:last-of-type)").forEach(x => {
+			x.remove();
+		});
+	});
 	socket.on("Pile", cards => {
 		if (Player.turn) return;
 		cards.forEach(card => {
@@ -430,6 +434,7 @@ function AddCard(card, source) {
 	img.card = card;
 	if (isTouch)
 		img.addEventListener("click", async () => {
+			if (!Player.turn) return;
 			if (card.Color == "wild") {
 				let choice = await selectColor();
 				card.ChosenColor = choice;

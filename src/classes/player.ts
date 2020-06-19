@@ -126,8 +126,13 @@ export default class Player {
 			return;
 		}
 		let card = this._room.pickCard();
+		let cards = [card];
+		while (!card.CanMatch(this._room.RecentCard)) {
+			card = this._room.pickCard();
+			cards.push(card);
+		}
 
-		this.AddCard("stock", card);
+		this.AddCard("stock", ...cards);
 	}
 
 	public TakeTurn() {
