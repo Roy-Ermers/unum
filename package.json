@@ -1,22 +1,23 @@
 {
-  "name": "uno",
-  "version": "1.0.0",
-  "description": "",
-  "main": "bin/app.js",
-  "scripts": {
-    "build": "tsc",
-    "start": "node ."
-  },
-  "author": "Roy Ermers",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^4.17.1",
-    "socket.io": "^2.3.0",
-    "node-sass": "4.13.1"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.2",
-    "@types/node": "^13.9.1",
-    "@types/socket.io": "^2.1.4"
-  }
+	"name": "uno",
+	"version": "1.0.0",
+	"description": "",
+	"main": "bin/app.js",
+	"scripts": {
+		"build": "tsc || :",
+		"start": "node .",
+		"production": "npm run build && NODE_ENV=production node ."
+	},
+	"author": "Roy Ermers",
+	"license": "ISC",
+	"dependencies": {
+		"express": "^4.17.1",
+		"socket.io": "^2.3.0",
+		"node-sass": "4.13.1"
+	},
+	"devDependencies": {
+		"@types/express": "^4.17.2",
+		"@types/node": "^13.9.1",
+		"@types/socket.io": "^2.1.4"
+	}
 }
