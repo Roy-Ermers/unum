@@ -6,7 +6,7 @@
 	"scripts": {
 		"build": "tsc || :",
 		"start": "node .",
-		"production": "npm run build && NODE_ENV=production node ."
+		"production": "npm run build && PORT=8091 NODE_ENV=production node ."
 	},
 	"author": "Roy Ermers",
 	"license": "ISC",
