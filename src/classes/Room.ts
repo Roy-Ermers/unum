@@ -101,8 +101,12 @@ export default class Room extends EventEmitter {
 			})
 			socket.on("disconnect", () => {
 				const player = this.players.find(x => x.SocketID == socket.id);
-				if (player)
-					PlayerManager.leavePlayer(player.ID);
+				if (player) {
+					try {
+						PlayerManager.leavePlayer(player.ID);
+					}
+					catch { }
+				}
 			})
 		});
 	}
