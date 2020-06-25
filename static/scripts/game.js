@@ -49,7 +49,7 @@ const startScreen = {
 	 */
 	removePlayer(player) {
 		console.log(player.ID + " left");
-		playerList.querySelector(`[data-id='${player.ID}']`).remove();
+		this.playerList.querySelector(`[data-id='${player.ID}']`).remove();
 	},
 	/**
 	 * @param {string} val
@@ -143,20 +143,19 @@ let Player = {
 };
 
 function JoinGame() {
-	let socketID = localStorage.getItem("SocketID");
+	let socketID = localStorage.getItem("SocketID")
 	let Name = localStorage.getItem("name");
 
-	if (!socketID || !Name) {
+	if (!Name || !socketID) {
 		//secret url
 		let hash = location.hash.substr(1);
 		if (hash.match(/([A-z0-9]){32}/)) {
+
 			socketID = hash;
-			if (!Name) {
-				let message = "";
-				while (!Name || Name == "" || Name.length < 3) {
-					Name = prompt(message + "What is your name?");
-					message = "Your name must be 3 characters long.\n";
-				}
+			let message = "";
+			while (!Name || Name == "" || Name.length < 3) {
+				Name = prompt(message + "What is your name?");
+				message = "Your name must be 3 characters long.\n";
 			}
 		}
 		else {
@@ -186,10 +185,9 @@ function JoinGame() {
 
 
 	socket.once("Authenticate", (callback) => {
-		let HostKey = localStorage.getItem("HostKey");
-		localStorage.removeItem("HostKey");
+		let ID = localStorage.getItem("ID");
 		console.log("Authenticating.");
-		callback({ Name, HostKey });
+		callback({ Name, ID });
 	});
 
 	socket.once("Authenticated", info => {
@@ -218,10 +216,6 @@ function JoinGame() {
 	socket.on("PlayerJoined", player => startScreen.addPlayer(player));
 	socket.on("PlayerLeft", player => startScreen.removePlayer(player));
 
-	socket.on("HostFound", player => {
-		startScreen.creator = player.Name;
-	});
-
 	socket.on("AddedCard", (cards) => {
 		let timings = [];
 		cards.Card.forEach((card, i) => {
@@ -230,6 +224,21 @@ function JoinGame() {
 			}, i * 60)
 		});
 	});
+	socket.on("data", data => {
+
+		data.cards.forEach(card => {
+			AddCard(new Card(card));
+		});
+		if (data.roomState == 1) {
+			if (data.pile)
+				ThrowCard(new Card(data.pile));
+
+			startScreen.show = false;
+
+			if (data.turn) takeTurn();
+		}
+	});
+
 	socket.on("ClearStock", () => {
 		pile.querySelectorAll(".card:not(:last-of-type)").forEach(x => {
 			x.remove();
@@ -243,9 +252,7 @@ function JoinGame() {
 	});
 
 	socket.on("Turn", () => {
-		hand.classList.remove("disabled");
-		Player.turn = true;
-		FilterCards();
+		takeTurn();
 	});
 
 	socket.on("EndTurn", () => {
@@ -260,6 +267,7 @@ function JoinGame() {
 
 		setTimeout(() => stack.classList.remove("invalid"), 500);
 	});
+
 	socket.on("CallUno", () => {
 		callButton.classList.add("show");
 		callButton.addEventListener("click", callUno);
@@ -304,6 +312,12 @@ function JoinGame() {
 
 }
 let callUnoTimer;
+function takeTurn() {
+	hand.classList.remove("disabled");
+	Player.turn = true;
+	FilterCards();
+}
+
 function callUno() {
 	if (callUnoTimer)
 		clearTimeout(callUnoTimer);

@@ -21,7 +21,8 @@ export default class Card {
 		else throw new TypeError("Missing sign.");
 	}
 
-	public CanMatch(card: Card) {
+	public CanMatch(card?: Card) {
+		if (!card) return false;
 		if (this.Color == "wild") return true;
 		if (card.ChosenColor != undefined && this.Color == card.ChosenColor) return true;
 		if (card.Color == this.Color) return true;

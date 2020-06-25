@@ -1,7 +1,9 @@
 import express from "express";
 import SocketIO from "socket.io";
-import { RoomManager } from "./classes/RoomManager";
+import RoomManager from "./classes/RoomManager";
+
 import logger from "./logger";
+import PlayerManager from "./classes/PlayerManager";
 const App = express();
 
 App.get("/logs", (req, res) => res.contentType("html").send(logger.Html));
@@ -12,8 +14,9 @@ App.use("*", (req, res) => {
 	res.status(404).send("Not found");
 });
 
-console.log(`Uno listening on ${process.env.PORT ?? 8080}`);
+console.log(`Unum listening on ${process.env.PORT ?? 8080}`);
 
 const IO = SocketIO(App.listen(process.env.PORT ?? 8080));
 
-RoomManager.Initialize(IO);
+PlayerManager.initialize();
+RoomManager.initialize(IO);

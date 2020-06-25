@@ -1,27 +1,33 @@
-import SocketIO from "socket.io";
+import SocketIO, { Socket } from "socket.io";
 import Card from "./card";
 import { GenerateID } from "../utils";
 import Room from "./Room";
-export default class Player {
+import { throws } from "assert";
 
+export default class Player {
 	private _ID: string;
 
-	private _socket: SocketIO.Socket;
+	private _socket?: SocketIO.Socket;
 
 	private _name: string;
 
-	private _room: Room;
+	private _room?: Room;
 
 	private _cards: Card[] = [];
 
-	public Host: boolean = false;
+	public get Host() {
+		return this._room?.host == this;
+	}
+	public set ID(val) {
+		this._ID = val;
+	}
 
 	public get ID() {
 		return this._ID;
 	}
 
 	public get SocketID() {
-		return this._socket?.id ?? "none";
+		return this._socket?.id;
 	}
 
 	public get CardCount() {
@@ -31,25 +37,51 @@ export default class Player {
 	public get Name() {
 		return this._name;
 	}
-
-	constructor(socket: SocketIO.Socket, name: string, room: Room) {
-		this._ID = GenerateID();
-		this._room = room;
-		this._socket = socket;
-		this._name = name;
-		this.setupEvents();
+	public get RoomID() {
+		return this._room?.ID;
 	}
 
-	public ClearCards() {
+	public set Socket(socket: Socket) {
+		this._socket = socket;
+		if (this._room)
+			this.setupEvents();
+	}
+
+
+	constructor(name: string, socket?: Socket, room?: Room) {
+		this._ID = GenerateID();
+		this._name = name;
+		this._room = room;
+		this._socket = socket;
+		if (this._socket !== undefined)
+			this.setupEvents();
+	}
+
+	public clearCards() {
 		this._cards = [];
 	}
 
-	public AddCard(source: string, ...Card: Card[]) {
+	public joinRoom(room: Room, socket: Socket) {
+		this._room = room;
+		this._socket = socket;
+		this.setupEvents();
+	}
+	leaveRoom(room: Room) {
+		if (this._room != room)
+			throw new Error("Player wasn't in this room.");
+		this._room = undefined;
+		this._socket = undefined;
+
+	}
+	public addCard(source: string, ...Card: Card[]) {
+		if (!this._room || !this._socket)
+			throw new Error("Player hasn't joined a room.");
+
 		this._cards.push(...Card);
 		this._socket.emit("AddedCard", { Card, source });
 	}
 
-	public RemoveCard(card: Card) {
+	public removeCard(card: Card) {
 		let index = this._cards.findIndex(x => card.Equals(x));
 		if (index < 0)
 			throw new Error("Card was not found.");
@@ -57,85 +89,109 @@ export default class Player {
 		this._cards.splice(index, 1);
 	}
 
-	public HasCard(match: Card) {
+	public hasCard(match: Card) {
 		return this._cards.some(card => card.Equals(match));
 	}
 
 	private setupEvents() {
+		if (!this._room || !this._socket)
+			throw new Error("Player hasn't joined a room.");
+
 		this._socket.on("GetCard", (callback: Function) => {
 			callback(this._cards);
 		});
 		this._socket.on("TakeCard", () => {
-			this.TakeCard();
+			this.takeCard();
 		});
 		this._socket.on("ThrowCard", (_card: Card, callback: Function) => {
-			this.ThrowCard(_card, callback);
+			this.throwCard(_card, callback);
 		});
 		this._socket.on("CalledUno", () => {
-			this._room.Log(`${this.Name} called unum.`);
+			if (!this._room || !this._socket)
+				throw new Error("Player hasn't joined a room.");
+
+			this._room.log(`${this.Name} called unum.`);
 			this._socket.broadcast.emit("CalledUno", this.toPublicObject());
 		})
 		this._socket.on("MissedUno", () => {
-			this._room.Log(`${this.Name} missed unum.`);
-			this.AddCard("stock", this._room.pickCard());
+			if (!this._room || !this._socket)
+				throw new Error("Player hasn't joined a room.");
+
+			this._room.log(`${this.Name} missed unum.`);
+			this.addCard("stock", this._room.pickCard());
 		});
 	}
 
-	private ThrowCard(_card: Card, callback: Function) {
+	/**
+	 * This method updates its client with all data such as cards and the pile.
+	 */
+	sendData() {
+		this._socket?.emit("data", { cards: this._cards, pile: this._room?.recentCard, roomState: this._room?.State, turn: this._room?.currentPlayer == this });
+	}
+
+	private throwCard(_card: Card, callback: Function) {
+		if (!this._room || !this._socket)
+			throw new Error("Player hasn't joined a room.");
 		let card: Card = new Card(_card);
-		if (!this.HasCard(_card) || this._room.CurrentPlayer != this) {
+		if (!this.hasCard(_card) || this._room.currentPlayer != this) {
 			callback(false);
 			this._socket.emit("Disconnect", { error: 423, reason: "Cheating is not allowed." });
 			this._socket.disconnect(true);
-			this._room.Warn(this.Name + " is cheating.");
+			this._room.warn(this.Name + " is cheating.");
 		}
 
-		if (card.CanMatch(this._room.RecentCard)) {
+		if (card.CanMatch(this._room.recentCard)) {
 
-			this._room.AddToPile(card);
-			this.RemoveCard(card);
+			this._room.addToPile(card);
+			this.removeCard(card);
 			callback(true);
 			if (this.CardCount == 1) {
-				this._room.Log(`${this.Name} has unum.`);
+				this._room.log(`${this.Name} has unum.`);
 				this._socket.emit("CallUno");
 			}
 
 			this._socket.emit("EndTurn");
 
 			if (this.CardCount == 0) {
-				this._room.EndGame(this);
+				this._room.endGame(this);
 				return;
 			}
 
 			if (card.Sign == "skip")
-				this._room.SkipTurn();
+				this._room.nextTurn();
 
 			else if (card.Sign == "reverse")
-				this._room.ChangeDirection();
+				this._room.changeDirection();
 
-			this._room.NextTurn(card.Penalty);
+			this._room.endTurn(card.Penalty);
 		}
 		else
 			callback(false);
 	}
 
-	public TakeCard() {
-		if (this._cards.some(card => card.CanMatch(this._room.RecentCard))) {
-			this._room.Warn("Player " + this.Name + " has matching cards, but tried to draw anyway.");
+	public takeCard() {
+		if (!this._room || !this._socket)
+			throw new Error("Player hasn't joined a room.");
+
+		if (this._cards.some(card => card.CanMatch(this._room?.recentCard))) {
+			this._room.warn("Player " + this.Name + " has matching cards, but tried to draw anyway.");
 			this._socket.emit("InvalidDraw");
 			return;
 		}
 		let card = this._room.pickCard();
 		let cards = [card];
-		while (!card.CanMatch(this._room.RecentCard)) {
+		while (!card.CanMatch(this._room.recentCard)) {
 			card = this._room.pickCard();
 			cards.push(card);
 		}
 
-		this.AddCard("stock", ...cards);
+		this.addCard("stock", ...cards);
 	}
 
-	public TakeTurn() {
+	public takeTurn() {
+		if (!this._room || !this._socket)
+			throw new Error("Player hasn't joined a room.");
+
 		this._socket.emit("Turn");
 	}
 

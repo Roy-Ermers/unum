@@ -1,5 +1,5 @@
 //@ts-nocheck
-const CACHE = 'v.28189';
+const CACHE = 'v.8481';
 
 self.addEventListener('install', function (evt) {
 	console.log('The service worker is being installed.');

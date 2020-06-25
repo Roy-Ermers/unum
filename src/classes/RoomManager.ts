@@ -1,6 +1,8 @@
 import Room from "./Room";
 import Logger from "../logger";
-export class RoomManager {
+import PlayerManager from "./PlayerManager";
+import Player from "./player";
+export default class RoomManager {
 	private static rooms: Room[] = [];
 	private static Socket: SocketIO.Namespace;
 	private static Server: SocketIO.Server;
@@ -9,15 +11,29 @@ export class RoomManager {
 		return this.rooms;
 	}
 
-	static Initialize(IO: SocketIO.Server) {
+	static initialize(IO: SocketIO.Server) {
 		this.Server = IO;
 		this.Socket = IO.of("/rooms");
-
 		this.Socket.on("connection", socket => {
+
+			socket.on("disconnect", () => {
+				try {
+					PlayerManager.leavePlayer(socket);
+				}
+				//player doesn't exist
+				catch { }
+			});
+
+			socket.on("NewPlayer", ({ name, ID }, callback) => {
+				const player = PlayerManager.joinPlayer(name, true, ID);
+				player.Socket = socket;
+				callback(player.ID);
+			});
+
 			socket.on("GetRooms", callback => {
 				let result =
 					this.Rooms
-						.filter(x => !x.Secret)
+						.filter(x => !x.secret)
 						.map(x => x.toPublicObject());
 				callback(result);
 			});
@@ -35,11 +51,10 @@ export class RoomManager {
 						callback({ error: 412, message: "Too many or too less players to make a game." });
 						return;
 					}
-
-					let newRoom = RoomManager.CreateRoom(room.Name, room.Password, room.Secret, room.MaxPlayers);
+					const player = PlayerManager.getPlayer(room.Host) as Player;
+					let newRoom = RoomManager.CreateRoom(room.Name, room.Password, room.Secret, player, room.MaxPlayers);
 					callback({
-						Room: newRoom.toPublicObject(),
-						HostKey: newRoom.HostKey
+						Room: newRoom.toPublicObject()
 					});
 				}
 			});
@@ -47,7 +62,7 @@ export class RoomManager {
 			socket.on("Authenticate", (roomID, password, callback) => {
 				let room = this.rooms.find(x => x.ID == roomID);
 				if (room) {
-					if (room.Password == (password ?? ""))
+					if (room.password == (password ?? ""))
 						callback({ SocketID: room.SocketID });
 					else callback({ error: 401, message: "Password is incorrect." })
 				}
@@ -58,17 +73,16 @@ export class RoomManager {
 			})
 		});
 	}
-	
-	public static CreateRoom(Name: string, password: string, secret: boolean, maxPlayers?: number) {
-		let room = new Room(Name, password, secret, maxPlayers);
+
+	public static CreateRoom(Name: string, password: string, secret: boolean, Host: Player, maxPlayers?: number) {
+		let room = new Room(Name, password, secret, Host, maxPlayers);
 
 		room.startupSocket(this.Server.of("/" + room.SocketID));
-		room.on("update", () => this.SendUpdate());
-		Logger.Log(`[Lobby] Created new room ${room.ID} ${room.Name}`);
+		Logger.Log(`[Lobby] Created new room ${room.ID} ${room.name}`);
 		this.rooms.unshift(room);
-		if (!room.Secret) {
+		if (!room.secret)
 			room.on("update", () => this.SendUpdate());
-		}
+
 		room.on("delete", () => this.Clean());
 		return room;
 	}
@@ -77,13 +91,13 @@ export class RoomManager {
 		Logger.Log("[lobby] sending update");
 		this.Socket.emit("update",
 			this.Rooms
-				.filter(x => !x.Secret)
+				.filter(x => !x.secret)
 				.map(x => x.toPublicObject()
 				));
 	}
 
 	public static Clean() {
-		this.Rooms.filter(x => x.ConnectedPlayers == 0).forEach(x => this.RemoveRoom(x.ID));
+		this.Rooms.filter(x => x.playerCount == 0).forEach(x => this.RemoveRoom(x.ID));
 	}
 
 	public static RemoveRoom(ID: string) {

@@ -8,14 +8,20 @@
  * @property {number} MaxPlayers
  * @property {number} State
  */
-
-//#region Service worker 
+/**
+ * @type {SocketIO.Socket}
+ */
+//@ts-ignore
+const RoomSocket = io("/rooms");
+let PlayerID = localStorage.getItem("ID");
+// #region Service worker 
 
 navigator.serviceWorker.register('service-worker.js', {
 	scope: '/'
 });
 
-////#endregion
+//#endregion
+
 //#region HTML
 const State = ["Waiting for players...", "Playing", "Done"];
 const RoomBrowser = document.querySelector(".room-browser");
@@ -33,6 +39,7 @@ const NameTextBox = document.querySelector("#Name");
 
 NameTextBox.value = localStorage.getItem("name") || "";
 if (ValidateName(NameTextBox.value)) {
+	SaveName(NameTextBox.value);
 	usernameForm.setAttribute("hidden", "");
 }
 
@@ -40,10 +47,11 @@ if (ValidateName(NameTextBox.value)) {
 NameTextBox.addEventListener("input", (ev) => ValidateName(ev.target.value));
 createRoomButton.addEventListener("click", () => addRoomPanel.classList.add("show"));
 closeButton.addEventListener("click", () => addRoomPanel.classList.remove("show"));
-loginForm.addEventListener("submit", SaveName);
+loginForm.addEventListener("submit", CloseNameForm);
 
 changeNameLink.addEventListener("click", () => {
 	localStorage.setItem("name", "");
+	localStorage.setItem("ID", "");
 	location.reload();
 });
 
@@ -57,6 +65,7 @@ searchField.addEventListener("input", () => {
 		el.classList.toggle("match", el.dataset.name.toLowerCase().includes(searchField.value.toLowerCase()));
 	});
 });
+
 passwordScreen.querySelector(".close-window").addEventListener("click", () => passwordScreen.classList.remove("show"));
 passwordScreen.addEventListener("submit", (ev) => {
 	ev.preventDefault();
@@ -64,6 +73,7 @@ passwordScreen.addEventListener("submit", (ev) => {
 	let password = passwordScreen.querySelector("input").value;
 	ConnectToRoom(RoomID, password);
 });
+
 createRoomForm.addEventListener("submit", CreateRoom);
 
 let search = new URLSearchParams(location.search);
@@ -82,15 +92,25 @@ if (search.has("reason")) {
 
 	window.history.replaceState({}, document.title, location.pathname);
 }
+function SaveName(name) {
+	if (ValidateName(name)) {
+		localStorage.setItem("name", name);
 
+		RoomSocket.emit("NewPlayer", { name, ID: PlayerID }, id => {
+			console.log(`We've got a player id ${id}`);
+			localStorage.setItem("ID", id);
+			PlayerID = id;
+		});
+		return true;
+	}
+	return false;
+}
 /**
  * @param {InputEvent} ev
  */
-function SaveName(ev) {
+function CloseNameForm(ev) {
 	ev.preventDefault();
-	if (ValidateName(NameTextBox.value)) {
-		localStorage.setItem("name", NameTextBox.value);
-
+	if (SaveName(NameTextBox.value)) {
 		usernameForm.animate([
 			{ opacity: 1 },
 			{ opacity: 0 }
@@ -105,21 +125,21 @@ function CreateRoom(ev) {
 	ev.preventDefault();
 	const form = ev.target;
 	console.log(form);
-	// @ts-ignore
+
 	const formData = new FormData(form);
 
 	let room = {
-		Name: formData.get("room-name"),
-		MaxPlayers: parseInt(formData.get("max-players")),
-		Password: formData.get("password"),
-		Secret: formData.get("secret") == "on"
+		Name: formData.get("room-name").toString(),
+		MaxPlayers: parseInt(formData.get("max-players").toString()),
+		Password: formData.get("password").toString(),
+		Secret: formData.has("secret"),
+		Host: PlayerID
 	};
 	RoomSocket.emit("CreateRoom", room, (response) => {
 		if (response.error) {
 			alert(response.message);
 		}
 		else {
-			localStorage.setItem("HostKey", response.HostKey);
 			ConnectToRoom(response.Room.ID, room.Password);
 		}
 	});
@@ -169,13 +189,11 @@ function AddRoom(room) {
 	let playerElement = document.createElement("p");
 	playerElement.textContent = room.Players + "/" + room.MaxPlayers;
 
-	if (room.Host) {
-		let creatorElem = document.createElement("span");
-		creatorElem.classList.add("creator");
-		creatorElem.textContent += " created by " + room.Host;
+	let creatorElem = document.createElement("span");
+	creatorElem.classList.add("creator");
+	creatorElem.textContent += " created by " + room.Host;
 
-		nameElement.appendChild(creatorElem);
-	}
+	nameElement.appendChild(creatorElem);
 
 	dataElement.appendChild(nameElement);
 	dataElement.appendChild(playerElement);
@@ -204,11 +222,7 @@ function ShowErrorMessage(message) {
 }
 //#endregion
 //#region Networking
-/**
- * @type {SocketIO.Socket}
- */
-//@ts-ignore
-const RoomSocket = io("/rooms");
+
 
 RoomSocket.on("connect", () => {
 	console.log("Connection established.");
@@ -222,13 +236,13 @@ RoomSocket.emit("GetRooms",
 	 * @param {Room[]} rooms
 	 */
 	rooms => {
-		console.log(rooms);
 		document.body.classList.remove("loading");
 		rooms.forEach(AddRoom);
 	});
 
 RoomSocket.on("RemovedRoom", ID => document.querySelector('#' + ID).remove());
 RoomSocket.on("update", rooms => rooms.forEach(AddRoom));
+
 /**
  * @param {string} RoomID
  * @param {string} [password]
