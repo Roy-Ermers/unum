@@ -21,9 +21,12 @@
 	<title>Unum</title>
 
 	<link href="https://fonts.googleapis.com/css?family=Roboto+Slab|Spartan&display=swap" rel="stylesheet">
+
 	<link rel="stylesheet" href="css/lobby.css">
 	<link rel="shortcut icon" href="images/icons/icon-72x72.png" type="image/x-icon">
+	<link rel="apple-touch-icon" href="images/icons/icon-192x192.png">
 	<link rel="manifest" href="manifest.json">
+
 	<script src="/socket.io/socket.io.js"></script>
 	<script defer src="scripts/lobby.js"></script>
 </head>
@@ -35,7 +38,8 @@
 			<h1>Login to Unum.</h1>
 			<form class="login-form">
 				<label for="Name">What's your name?</label>
-				<input placeholder="What is your name?" type="text" name="Name" id="Name" autocomplete="off">
+				<input placeholder="What is your name?" type="text" name="Name" id="Name" autocomplete="off"
+					aria-label="search for room">
 
 				<button disabled class="nextButton">Continue</button>
 			</form>
@@ -43,16 +47,19 @@
 		</div>
 		<div class="lobby">
 			<img src="images/logo.svg" alt="" class="logo">
-			<a class="change-name">&triangleleft; change name...</a>
+			<h1 class="title">unum</h1>
+
+			<a class="change-name"><img src="images/arrow-left.svg" alt="arrow left"> Change name</a>
 			<div>
 				<h1>Room browser</h1>
 				<input type="search" placeholder="search" id="search" autocomplete="off">
-				<button class="add create-room"></button>
+				<button class="add create-room" aria-label="Create new room"></button>
 				<div class="room-browser"></div>
 			</div>
 			<form class="password-screen">
 				<h1>Enter password</h1>
-				<input type="text" name="password" id="" placeholder="enter password..." autocomplete="off">
+				<input type="text" name="password" id="" placeholder="enter password..." autocomplete="off"
+					aria-label="enter password">
 				<div class="button-group">
 					<button class="secondary close-window" type="button">Cancel</button>
 					<button>Enter</button>

@@ -102,6 +102,12 @@ body::after {
 		margin: 0 auto;
 	}
 
+	.title {
+		text-align: center;
+		font-size: 2rem;
+		margin-top: 0;
+	}
+
 	.change-name {
 		opacity: 0.5;
 		position: fixed;
@@ -110,6 +116,12 @@ body::after {
 		font-size: 0.75;
 		font-weight: 100;
 		cursor: pointer;
+
+		img {
+			height: 1.2em;
+			display: inline-block;
+			vertical-align: middle;
+		}
 	}
 
 	.create-room {

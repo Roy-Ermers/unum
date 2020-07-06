@@ -39,22 +39,26 @@ hr {
   z-index: 999;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
   padding: 2rem 2rem;
+  padding-left: 5rem;
   border-radius: 4px;
   justify-items: center;
-  text-align: center;
-  background: url("/images/warning.png") #bc13fe;
+  text-align: left;
+  background: url("/images/warning.svg") #bc13fe;
   background-repeat: no-repeat;
   background-size: 4rem;
   background-position: 1rem center;
-  animation: alert 5s ease forwards;
+  animation: alert-top 5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
 }
 @media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
   .alert {
     left: 5px;
     right: 5px;
+    bottom: 5px;
+    top: initial;
+    animation-name: alert-bottom;
   }
 }
-@keyframes alert {
+@keyframes alert-top {
   0% {
     opacity: 0;
     top: -8rem;
@@ -69,6 +73,24 @@ hr {
   }
   100% {
     top: -8rem;
+    opacity: 0;
+  }
+}
+@keyframes alert-bottom {
+  0% {
+    opacity: 0;
+    bottom: -8rem;
+  }
+  10% {
+    bottom: 5px;
+    opacity: 1;
+  }
+  90% {
+    bottom: 5px;
+    opacity: 1;
+  }
+  100% {
+    bottom: -8rem;
     opacity: 0;
   }
 }
@@ -139,14 +161,17 @@ input:checked + .switch > .knob {
 }
 
 input {
-  background-color: transparent;
+  background-color: rgba(51, 51, 51, 0.75);
   display: block;
-  padding: 5px 0;
-  margin-top: 15px;
-  border: none;
+  box-sizing: border-box;
+  padding: 5px 0.5rem;
+  border: 1px solid #2b2d31;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
   border-bottom: #fff 2px solid;
   color: #fff;
   margin: 0 auto;
+  margin-top: 0.25rem;
   outline: none;
   transition: border-bottom 250ms ease;
   text-align: left;
@@ -356,6 +381,11 @@ body::after {
   display: block;
   margin: 0 auto;
 }
+.lobby .title {
+  text-align: center;
+  font-size: 2rem;
+  margin-top: 0;
+}
 .lobby .change-name {
   opacity: 0.5;
   position: fixed;
@@ -365,11 +395,28 @@ body::after {
   font-weight: 100;
   cursor: pointer;
 }
+.lobby .change-name img {
+  height: 1.2em;
+  display: inline-block;
+  vertical-align: middle;
+}
 .lobby .create-room {
   display: inline-block;
   position: relative;
   bottom: -2rem;
   right: calc(-100% + 3rem);
+}
+.lobby .leave-feedback {
+  position: fixed;
+  bottom: 0;
+  right: 5px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+  vertical-align: bottom;
+  text-align: right;
+}
+.lobby .leave-feedback a {
+  color: rgba(188, 19, 254, 0.5);
 }
 .lobby input[type=search] {
   display: block;
@@ -380,6 +427,8 @@ body::after {
   font-size: 1.2rem;
   width: 100%;
   padding-left: 5px;
+  background-color: none;
+  border: none;
 }
 .lobby .room-browser {
   background-color: #2b2d31;
