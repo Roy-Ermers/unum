@@ -6,19 +6,20 @@
 	"scripts": {
 		"build": "tsc || :",
 		"start": "node .",
-		"production": "npm install && npm run build && PORT=8091 NODE_ENV=production node .",
-		"dev": "tsc -w & nodemon"
+		"production": "npm install && npm run build-scss && npm run build && PORT=8091 NODE_ENV=production node .",
+		"dev": "tsc -w & nodemon",
+		"build-scss": "sass static/scss:static/css --watch"
 	},
 	"author": "Roy Ermers",
 	"license": "ISC",
 	"dependencies": {
 		"express": "^4.17.1",
-		"socket.io": "^2.3.0",
-		"node-sass": "4.13.1"
+		"socket.io": "^2.3.0"
 	},
 	"devDependencies": {
 		"@types/express": "^4.17.2",
 		"@types/node": "^13.9.1",
-		"@types/socket.io": "^2.1.4"
+		"@types/socket.io": "^2.1.4",
+		"sass": "^1.26.9"
 	}
 }

@@ -10,6 +10,7 @@ const hand = document.querySelector(".hand");
 const pile = document.querySelector(".pile");
 const playerList = document.querySelector("body>.players");
 const stack = document.querySelector(".stack");
+const direction = document.querySelector(".direction");
 
 const startScreen = {
 	element: document.querySelector(".start-page"),
@@ -176,7 +177,7 @@ function JoinGame() {
 		timeout: 20000
 	});
 
-	socket.on("connect", () => {
+	socket.once("connect", () => {
 		console.log("Connection established.");
 		clearTimeout(timeout);
 	});
@@ -224,8 +225,9 @@ function JoinGame() {
 			}, i * 60)
 		});
 	});
-	socket.on("data", data => {
 
+	// Called once when this client rejoins
+	socket.on("data", data => {
 		data.cards.forEach(card => {
 			AddCard(new Card(card));
 		});
@@ -239,6 +241,7 @@ function JoinGame() {
 		}
 	});
 
+	// the stock 
 	socket.on("ClearStock", () => {
 		pile.querySelectorAll(".card:not(:last-of-type)").forEach(x => {
 			x.remove();
@@ -257,6 +260,7 @@ function JoinGame() {
 
 	socket.on("EndTurn", () => {
 		hand.classList.add("disabled");
+		stack.classList.remove("attention");
 		[...hand.children].forEach(x => x.classList.remove("impossible"));
 		Player.turn = false;
 	});
@@ -278,7 +282,7 @@ function JoinGame() {
 			socket.emit("MissedUno");
 		}, 5000);
 	});
-
+	socket.on("ChangeDirection", direction => changeDirection(direction));
 	socket.on("CalledUno", player => {
 		ShowErrorMessage(`Watch out, ${player.Name} has called unum!`);
 	});
@@ -289,7 +293,7 @@ function JoinGame() {
 
 		Player.turn = false;
 		if (Player.Host) {
-			startScreen.startButton.textContent = "restart";
+			startScreen.startButton.textContent = "Restart";
 		}
 
 		[...hand.children].forEach(x => {
@@ -313,6 +317,12 @@ function JoinGame() {
 }
 let callUnoTimer;
 function takeTurn() {
+	if (hand.childElementCount > 0) {
+		const hasMatching = [...hand.children].some(x => x.card.CanMatch(recentCard));
+
+		if (!hasMatching)
+			stack.classList.add("attention");
+	}
 	hand.classList.remove("disabled");
 	Player.turn = true;
 	FilterCards();
@@ -324,6 +334,11 @@ function callUno() {
 
 	callButton.classList.remove("show");
 	socket.emit("CalledUno");
+}
+
+function changeDirection(GameDirection) {
+	direction.classList.toggle("counterclockwise", GameDirection == 1);
+	direction.classList.toggle("clockwise", GameDirection == 0);
 }
 
 
@@ -411,7 +426,7 @@ function ShowErrorMessage(message) {
 }
 
 function selectColor() {
-	return new Promise((resolve) => {
+	return new Promise((resolve, reject) => {
 		colorSelect.classList.add("show");
 		let blue = colorSelect.querySelector(".blue");
 		let red = colorSelect.querySelector(".red");
@@ -423,9 +438,18 @@ function selectColor() {
 			red.removeEventListener("click", chooseColor);
 			yellow.removeEventListener("click", chooseColor);
 			green.removeEventListener("click", chooseColor);
+			colorSelect.removeEventListener("click", ev => {
+				if (ev.target == colorSelect)
+					reject();
+			});
 			colorSelect.classList.remove("show");
 			resolve(color);
 		}
+		colorSelect.addEventListener("click", ev => {
+			if (ev.target == colorSelect)
+				reject();
+			colorSelect.classList.remove("show");
+		});
 		blue.addEventListener("click", () => chooseColor("blue"));
 		red.addEventListener("click", () => chooseColor("red"));
 		yellow.addEventListener("click", () => chooseColor("yellow"));
@@ -460,8 +484,7 @@ function AddCard(card, source) {
 				}
 				else {
 					card.ChosenColor = undefined;
-					AddCard(card, "pile");
-					ShowErrorMessage("This card can't be thrown on this card.");
+					ShowErrorMessage("That doesn't work!");
 				}
 			});
 
@@ -536,7 +559,7 @@ function ThrowCard(card, offsetX, offsetY) {
 	img.classList.add("card");
 	img.src = card.URL;
 	pile.appendChild(img);
-	let randomRotation = Math.random() * 360;
+	let randomRotation = Math.random() * 180 - 90;
 	recentCard = card;
 	offsetX |= window.innerWidth / 2;
 	offsetY |= window.innerHeight / 2;
@@ -571,8 +594,14 @@ pile.addEventListener("drop", async ev => {
 	if (ev.dataTransfer.types.includes("uno-card")) {
 		let card = new Card(JSON.parse(ev.dataTransfer.getData("uno-card")));
 		if (card.Color == "wild") {
-			let choice = await selectColor();
-			card.ChosenColor = choice;
+			try {
+				let choice = await selectColor();
+				card.ChosenColor = choice;
+			}
+			catch {
+				AddCard(card);
+				return;
+			}
 		}
 		/**
 		 * @param {any} allow
@@ -584,7 +613,7 @@ pile.addEventListener("drop", async ev => {
 			else {
 				card.ChosenColor = undefined;
 				AddCard(card, "pile");
-				ShowErrorMessage("This card can't be thrown on this card.");
+				ShowErrorMessage("That doesn't work!");
 			}
 		});
 	}
@@ -616,7 +645,7 @@ function loadPlayerList() {
 		playerlist.forEach(player => {
 			let elem = document.createElement("p");
 			elem.textContent = player.Name;
-			if (player.Cards < 10)
+			if (player.Cards < 7 && !isTouch)
 				for (let i = 0; i < player.Cards; i++) {
 					let img = document.createElement("img");
 					img.src = "images/card_back.png";

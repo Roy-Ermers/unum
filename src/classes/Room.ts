@@ -4,10 +4,10 @@ import Player from "./player";
 import Card from "./card";
 import Logger from "../logger";
 import PlayerManager from "./PlayerManager";
-import { isRegExp } from "util";
 
 export enum RoomState { WaitingForPlayers, Started, Done };
 export enum GameDirection { ClockWise, CounterClockWise };
+
 export default class Room extends EventEmitter {
 	public get ID(): string {
 		return this._ID;
@@ -310,7 +310,7 @@ export default class Room extends EventEmitter {
 		return {
 			ID: this._ID,
 			Name: this.name,
-			Host: this.host.Name ?? "",
+			Host: this.host?.Name ?? "",
 			HasPassword: this.password != undefined && this.password != "",
 			State: this.State,
 			Secret: this.secret,

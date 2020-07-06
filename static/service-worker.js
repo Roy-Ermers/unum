@@ -1,5 +1,5 @@
 //@ts-nocheck
-const CACHE = 'v.3075';
+const CACHE = 'v.32117';
 
 self.addEventListener('install', function (evt) {
 	console.log('The service worker is being installed.');
@@ -28,7 +28,7 @@ function precache() {
 			'./css/lobby.css',
 			'./scripts/lobby.js',
 			'./scripts/game.js',
-			'./images/UNO.png',
+			'./images/logo.svg',
 			'./images/logo.png',
 			'./images/small_icon.png',
 			'./images/lock.png',
