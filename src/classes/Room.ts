@@ -294,7 +294,7 @@ export default class Room extends EventEmitter {
 
 		if (penalty) {
 			let cards = [];
-			for (let i = penalty; i >= 0; i--)
+			for (let i = penalty; i > 0; i--)
 				cards.push(this.pickCard());
 
 			player.addCard("stock", ...cards);
