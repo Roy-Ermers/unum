@@ -122,6 +122,10 @@ function CloseNameForm(ev) {
  * @param {Event} ev 
  */
 function CreateRoom(ev) {
+	if (PlayerID == "") {
+		ShowErrorMessage("You don't have an ID, please refresh page!");
+		return;
+	}
 	ev.preventDefault();
 	const form = ev.target;
 	console.log(form);
