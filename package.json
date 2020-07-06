@@ -8,7 +8,7 @@
 		"start": "node .",
 		"production": "npm install && npm run build-scss && npm run build && PORT=8091 NODE_ENV=production node .",
 		"dev": "tsc -w & nodemon",
-		"build-scss": "sass static/scss:static/css --watch"
+		"build-scss": "sass static/scss:static/css"
 	},
 	"author": "Roy Ermers",
 	"license": "ISC",
