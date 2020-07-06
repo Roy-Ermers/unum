@@ -621,6 +621,7 @@ pile.addEventListener("drop", async ev => {
 
 stack.addEventListener("click", () => {
 	if (!Player.turn) return;
+	stack.classList.remove("attention");
 	socket.emit("TakeCard");
 });
 window.addEventListener('wheel', function (e) {

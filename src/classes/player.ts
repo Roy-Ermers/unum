@@ -133,11 +133,17 @@ export default class Player {
 		if (!this._room || !this._socket)
 			throw new Error("Player hasn't joined a room.");
 		let card: Card = new Card(_card);
-		if (!this.hasCard(_card) || this._room.currentPlayer != this) {
+		if (this._room.currentPlayer != this) {
+			callback(false);
+			this._room.warn(this.Name + " took his turn too early.");
+			return;
+		}
+		if (!this.hasCard(_card)) {
 			callback(false);
 			this._socket.emit("Disconnect", { error: 423, reason: "Cheating is not allowed." });
 			this._socket.disconnect(true);
 			this._room.warn(this.Name + " is cheating.");
+			return;
 		}
 
 		if (card.CanMatch(this._room.recentCard)) {
