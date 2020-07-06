@@ -119,6 +119,20 @@ body::after {
 		right: calc(-100% + 3rem);
 	}
 
+	.leave-feedback {
+		position: fixed;
+		bottom: 0;
+		right: 5px;
+		margin: 0;
+		color: rgba(#fff, .5);
+		vertical-align: bottom;
+		text-align: right;
+
+		a {
+			color: rgba(base.$purple, .5);
+		}
+	}
+
 	input[type=search] {
 		display: block;
 		margin: 0 auto;
